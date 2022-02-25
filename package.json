@@ -1,0 +1,14 @@
+{
+  "name": "wasm-ffmpeg",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "express": "^4.17.3"
+  },
+  "author": "",
+  "license": "ISC"
+}
