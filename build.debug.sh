@@ -70,6 +70,6 @@ ARGS=(
   -s EXPORTED_RUNTIME_METHODS="[addFunction]"
   -s RESERVED_FUNCTION_POINTERS=14
   -s FORCE_FILESYSTEM=1
-  -o  /mnt/d/Works/Personal/Github/wasm-ffmpeg>/dist/assets/ffmpeg.js
+  -o  /mnt/d/Works/Personal/Github/wasm-ffmpeg/dist/assets/ffmpeg.js
 )
 emcc "${ARGS[@]}"
