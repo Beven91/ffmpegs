@@ -77,7 +77,7 @@ function decode_seq(file_list, file_idx) {
         reader.onload = function() {
             var typedArray = new Uint8Array(this.result);
             var size = typedArray.length
-            var cacheBuffer = Module.stackAlloc(size);
+            var cacheBuffer = Module._malloc(size);
             Module.HEAPU8.set(typedArray, cacheBuffer);
             totalSize += size
             // console.log("[" + (++readerIndex) + "] Read len = ", size + ", Total size = " + totalSize)
@@ -136,16 +136,17 @@ function blob_slice(blob, start_addr, end_addr) {
 
 function displayVideoFrame(obj) {
     var data = new Uint8Array(obj.data);
-    var width = obj.width;
-    var height = obj.height;
-    var yLength = width * height;
-    var uvLength = (width / 2) * (height / 2);
-    if(!webglPlayer) {
-        const canvasId = "playCanvas";
-        canvas = document.getElementById(canvasId);
-        webglPlayer = new WebGLPlayer(canvas, {
-            preserveDrawingBuffer: false
-        });
-    }
-    webglPlayer.renderFrame(data, width, height, yLength, uvLength);
+    scriptNodeCallback(data);
+    // var width = obj.width;
+    // var height = obj.height;
+    // var yLength = width * height;
+    // var uvLength = (width / 2) * (height / 2);
+    // if(!webglPlayer) {
+    //     const canvasId = "playCanvas";
+    //     canvas = document.getElementById(canvasId);
+    //     webglPlayer = new WebGLPlayer(canvas, {
+    //         preserveDrawingBuffer: false
+    //     });
+    // }
+    // webglPlayer.renderFrame(data, width, height, yLength, uvLength);
 }

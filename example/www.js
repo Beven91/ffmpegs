@@ -10,8 +10,6 @@ server.use((req,resp,next)=>{
 });
 
 server.use(express.static(path.resolve('./example/public')))
-server.use(express.static(path.resolve('./dist')))
-
-
+server.use(express.static(path.resolve('./dist/assets')))
 
 server.listen(8080)

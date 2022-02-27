@@ -12,14 +12,14 @@
     </div>
     <div style="margin: 20px;">
       AudioContext:
-        <input type="file" onchange="handleAudioFiles(this.files)" onclick="setAudioDecoder(0)">
+        <input type="file" onchange="handleAudioFiles(this.files)">
     </div>
     <div style="margin: 20px;">
       MSE:
         <input type="file" onchange="handleAudioFiles(this.files)" onclick="setAudioDecoder(1)">
     </div>
     <div style="margin: 20px;">
-      <button id="play" onclick="playAudio()">Start Play</button>
+      <button id="play">Start Play</button>
     </div>
     <div style="margin: 20px;">
       <button id="play" onclick="fastForword()">FastForword</button>
@@ -30,9 +30,7 @@
   </div>
 
   <script src="./ffmpeg.js"></script>
-  <script src="video.js"></script>
-  <script src="audio.js"></script>
-  <script src="webgl.js"></script>
+  <script src="demo.js"></script>
 
 </body>
 </html>

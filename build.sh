@@ -66,7 +66,7 @@ ARGS=(
   -I dist/ffmpeg/include
   -s WASM=1
   -s TOTAL_MEMORY=67108864
-  -s EXPORTED_FUNCTIONS="[_openDecoder,_flushDecoder,_closeDecoder,_decodeData,_main]"  # export main and proxy_main funcs
+  -s EXPORTED_FUNCTIONS="[_malloc,_free,_openDecoder,_flushDecoder,_closeDecoder,_decodeData,_main]"  # export main and proxy_main funcs
   -s EXPORTED_RUNTIME_METHODS="[addFunction]"
   -s RESERVED_FUNCTION_POINTERS=14
   -s FORCE_FILESYSTEM=1
