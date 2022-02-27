@@ -8,6 +8,8 @@
 #define STATIC_CAST(type, variable) C_CAST(type, variable)
 #define RAW_OUT_ON_PLANAR 0
 
+FILE **outFiles;
+
 int LOG(const char *message)
 {
   printf("FFMPEG: %s\n", message);
@@ -40,7 +42,7 @@ float getSample(const AVCodecContext *codecCtx, uint8_t *buffer, int sampleIndex
     break;
 
   default:
-    done(8, "invalid sample size");
+    LOG("invalid sample size");
     return 0;
   }
 
@@ -70,7 +72,7 @@ float getSample(const AVCodecContext *codecCtx, uint8_t *buffer, int sampleIndex
     break;
 
   default:
-    done(9, "invalid sample format");
+    LOG("invalid sample format");
     return 0;
   }
   return ret;

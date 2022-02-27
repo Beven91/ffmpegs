@@ -24,7 +24,6 @@ CONFIG_ARGS=(
   --enable-gpl
   --enable-version3
   --disable-avdevice
-  --disable-avformat
   --disable-swresample
   --disable-postproc
   --disable-avfilter
@@ -61,7 +60,7 @@ make install
 cd ../
 
 ARGS=(
-  src/audio_decoder.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a
+  src/audio_decoder.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a dist/ffmpeg/lib/lavformat.a
   -O3
   -I dist/ffmpeg/include
   -s WASM=1
