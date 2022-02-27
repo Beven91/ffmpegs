@@ -60,7 +60,7 @@ make install
 cd ../
 
 ARGS=(
-  src/audio_decoder.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a dist/ffmpeg/lib/lavformat.a
+  src/audio_decoder.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a dist/ffmpeg/lib/libavformat.a
   -O3
   -I dist/ffmpeg/include
   -s WASM=1

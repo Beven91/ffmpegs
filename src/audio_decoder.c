@@ -10,9 +10,9 @@
 
 FILE **outFiles;
 
-int LOG(const char *message)
+int LOG(const char *format, ...)
 {
-  printf("FFMPEG: %s\n", message);
+  printf("FFMPEG:\n", format, ...);
 }
 
 float getSample(const AVCodecContext *codecCtx, uint8_t *buffer, int sampleIndex)
@@ -134,7 +134,7 @@ void decode(const char *filename, const char *callbackId)
   ret = avformat_open_input(&formatCtx, filename, NULL, 0);
   if (ret < 0)
   {
-    LOG("cannot open file:" + filename);
+    LOG("cannot open file: %s", filename);
     goto flush;
   }
 
@@ -164,7 +164,7 @@ void decode(const char *filename, const char *callbackId)
   if (codec == NULL)
   {
     ret = 3;
-    LOG("not supported codec:" + streams[streamIndex]->codecpar->codec_id);
+    LOG("not supported codec: %s", streams[streamIndex]->codecpar->codec_id);
     goto flush;
   }
 
@@ -273,7 +273,7 @@ flush:
           sampleFormat : UTF8ToString($5),
           sampleRate : $6,
           sampleSize : $7,
-          channels : Object.keys($8).map(c => {
+          channels : Object.keys($8).map(c = > {
             var filename = 'channel_' + c;
             var ch = FS.readFile(filename);
             FS.unlink(filename);
@@ -290,8 +290,7 @@ flush:
       codecCtx != null ? av_get_sample_fmt_name(codecCtx->sample_fmt) : NULL,
       codecCtx != null ? codecCtx->sample_rate : 0,
       codecCtx != null ? av_get_bytes_per_sample(codecCtx->sample_fmt) : 0,
-      codecCtx != null ? codecCtx->channels : NULL
-  )
+      codecCtx != null ? codecCtx->channels : NULL)
 }
 
 void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFrame *frame)
