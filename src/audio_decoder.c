@@ -12,10 +12,12 @@ FILE **outFiles;
 
 int LOG(const char *format, ...)
 {
+  char szBuffer[1024] = { 0 };
   va_list ap;
 	va_start(ap, format);
-	vsnprintf("FFMPEG:",format, ap,"\n");
+	vsnprintf(szBuffer,1024, format, ap);
 	va_end(ap);
+  printf("FFMPEG: %s \n",szBuffer);
 }
 
 float getSample(const AVCodecContext *codecCtx, uint8_t *buffer, int sampleIndex)
@@ -127,6 +129,29 @@ int receiveFrame(AVCodecContext *codecCtx, AVFrame *frame)
   return err;
 }
 
+void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFrame *frame)
+{
+  if (frame != NULL)
+  {
+    av_frame_free(&frame);
+  }
+  if (formatCtx != NULL)
+  {
+    avformat_close_input(&formatCtx);
+    avformat_free_context(formatCtx);
+  }
+  if (codecCtx != NULL)
+  {
+    drainDecoder(codecCtx, frame);
+    avcodec_close(codecCtx);
+    avcodec_free_context(&codecCtx);
+    for (int i = 0; i < codecCtx->channels; i++)
+    {
+      fclose(outFiles[i]);
+    }
+  }
+}
+
 void decode(const char *filename, const char *callbackId)
 {
   int ret = 0;
@@ -167,7 +192,7 @@ void decode(const char *filename, const char *callbackId)
   if (codec == NULL)
   {
     ret = 3;
-    LOG("not supported codec: %s", streams[streamIndex]->codecpar->codec_id);
+    LOG("not supported codec: %s", formatCtx->streams[streamIndex]->codecpar->codec_id);
     goto flush;
   }
 
@@ -294,27 +319,4 @@ flush:
       codecCtx != null ? codecCtx->sample_rate : 0,
       codecCtx != null ? av_get_bytes_per_sample(codecCtx->sample_fmt) : 0,
       codecCtx != null ? codecCtx->channels : NULL)
-}
-
-void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFrame *frame)
-{
-  if (frame != NULL)
-  {
-    av_frame_free(&frame);
-  }
-  if (formatCtx != NULL)
-  {
-    avformat_close_input(&formatCtx);
-    avformat_free_context(formatCtx);
-  }
-  if (codecCtx != NULL)
-  {
-    drainDecoder(codecCtx, frame);
-    avcodec_close(codecCtx);
-    avcodec_free_context(&codecCtx);
-    for (int i = 0; i < codecCtx->channels; i++)
-    {
-      fclose(outFiles[i]);
-    }
-  }
 }
