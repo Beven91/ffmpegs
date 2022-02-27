@@ -12,7 +12,10 @@ FILE **outFiles;
 
 int LOG(const char *format, ...)
 {
-  printf("FFMPEG:\n", format, ...);
+  va_list ap;
+	va_start(ap, format);
+	vsnprintf("FFMPEG:",format, ap,"\n");
+	va_end(ap);
 }
 
 float getSample(const AVCodecContext *codecCtx, uint8_t *buffer, int sampleIndex)
