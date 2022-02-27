@@ -10,7 +10,7 @@
 
 FILE **outFiles;
 
-int LOG(const char *format, ...)
+void LOG(const char *format, ...)
 {
   char szBuffer[1024] = { 0 };
   va_list ap;
@@ -131,6 +131,7 @@ int receiveFrame(AVCodecContext *codecCtx, AVFrame *frame)
 
 void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFrame *frame)
 {
+  LOG("flush start");
   if (frame != NULL)
   {
     av_frame_free(&frame);
@@ -142,7 +143,8 @@ void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFram
   }
   if (codecCtx != NULL)
   {
-    drainDecoder(codecCtx, frame);
+   // drainDecoder(codecCtx, frame);
+          LOG("flush start3");
     avcodec_close(codecCtx);
     avcodec_free_context(&codecCtx);
     for (int i = 0; i < codecCtx->channels; i++)
@@ -150,19 +152,24 @@ void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFram
       fclose(outFiles[i]);
     }
   }
+  LOG("flush end");
 }
 
-void decode(const char *filename, const char *callbackId)
+int decode(const char *filename, const char *callbackId)
 {
   int ret = 0;
   int streamIndex = -1;
   AVFormatContext *formatCtx = NULL;
+  AVCodecContext *codecCtx = NULL;
+  AVFrame *frame = NULL;
+
+  LOG("file: %s, callback: %s",filename, callbackId);
 
   // 1. 打开指定文件
   ret = avformat_open_input(&formatCtx, filename, NULL, 0);
   if (ret < 0)
   {
-    LOG("cannot open file: %s", filename);
+    LOG("cannot open file: (%d) ->  %s", ret, filename);
     goto flush;
   }
 
@@ -187,7 +194,7 @@ void decode(const char *filename, const char *callbackId)
   }
 
   // 4. 查找对应解码器
-  AVCodec *codec = avcodec_find_decoder(formatCtx->streams[streamIndex]->codecpar->codec_id);
+  const AVCodec *codec = avcodec_find_decoder(formatCtx->streams[streamIndex]->codecpar->codec_id);
 
   if (codec == NULL)
   {
@@ -197,7 +204,7 @@ void decode(const char *filename, const char *callbackId)
   }
 
   // 5. 分配解码上下文
-  AVCodecContext *codecCtx = avcodec_alloc_context3(codec);
+  codecCtx = avcodec_alloc_context3(codec);
   if (codecCtx == NULL)
   {
     ret = 4;
@@ -231,7 +238,6 @@ void decode(const char *filename, const char *callbackId)
     outFiles[c] = fopen(name, "w+");
   }
 
-  AVFrame *frame = NULL;
   if ((frame = av_frame_alloc()) == NULL)
   {
     ret = 7;
@@ -281,42 +287,45 @@ void decode(const char *filename, const char *callbackId)
     }
   }
 
-  if (ret == AVERROR_EOF)
-  {
-    ret = 0;
-  }
+  flush: 
 
-flush:
   flushResources(formatCtx, codecCtx, frame);
 
-  EM_ASM(
-      {
-        var callbackId = UTF8ToString($0);
-        var callback = window[callbackId];
-        var data = {
-          codecId : $1,
-          codecName : UTF8ToString($2),
-          codecLongName : UTF8ToString($3),
-          streamIndex : $4,
-          sampleFormat : UTF8ToString($5),
-          sampleRate : $6,
-          sampleSize : $7,
-          channels : Object.keys($8).map(c = > {
-            var filename = 'channel_' + c;
-            var ch = FS.readFile(filename);
-            FS.unlink(filename);
-            return new Float32Array(ch.buffer);
-          })
-        };
-        callback(data);
-      },
-      callbackId,
-      codec != null ? codec->id : NULL,
-      codec != null ? codec->name : NULL,
-      codec != null ? codec->long_name : NULL,
-      streamIndex,
-      codecCtx != null ? av_get_sample_fmt_name(codecCtx->sample_fmt) : NULL,
-      codecCtx != null ? codecCtx->sample_rate : 0,
-      codecCtx != null ? av_get_bytes_per_sample(codecCtx->sample_fmt) : 0,
-      codecCtx != null ? codecCtx->channels : NULL)
+  char szBuffer[1024] = { 0 };
+  av_strerror(ret,szBuffer,1024);
+  LOG(szBuffer);
+
+  EM_ASM({
+      var data = {};
+      var callbackId = UTF8ToString($0);
+      var codecId = $1;
+      var callback = window[callbackId];
+      data.codecName = UTF8ToString($2);
+      data.codecLongName = UTF8ToString($3);
+      data.streamIndex = $4;
+      data.sampleFormat = UTF8ToString($5);
+      data.sampleRate = $6;
+      data.sampleSize = $7;
+      data.channels = $8;
+      data.channelsBuffer = [];
+      for(var i=0;i<data.channels;i++){
+        var filename = 'channel_' + i;
+        var ch = FS.readFile(filename);
+        FS.unlink(filename);
+        data.channelsBuffer.push(new Float32Array(ch.buffer));
+      }
+      callback(data);
+    },
+    callbackId,
+    codec != NULL ? codec->id : 0,
+    codec != NULL ? codec->name : NULL,
+    codec != NULL ? codec->long_name : NULL,
+    streamIndex,
+    codecCtx != NULL ? av_get_sample_fmt_name(codecCtx->sample_fmt) : NULL,
+    codecCtx != NULL ? codecCtx->sample_rate : 0,
+    codecCtx != NULL ? av_get_bytes_per_sample(codecCtx->sample_fmt) : 0,
+    codecCtx != NULL ? codecCtx->channels : 0
+  );
+  
+  return ret;
 }

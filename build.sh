@@ -9,9 +9,12 @@ rm -rf dist/ffmpeg
 CFLAGS="-s USE_PTHREADS -O3"
 LDFLAGS="$CFLAGS -s INITIAL_MEMORY=33554432" # 33554432 bytes = 32 MB
 CONFIG_ARGS=(
+  --objcc=emcc
+  --dep-cc=emcc
   --cc="emcc"
   --cxx="em++"
   --ar="emar"
+  --nm="llvm-nm -g" \
   --ranlib="emranlib"
   --prefix=$(pwd)/dist/ffmpeg
   --enable-cross-compile
@@ -40,13 +43,17 @@ CONFIG_ARGS=(
   --disable-parsers
   --disable-bsfs
   --disable-debug
-  --disable-protocols
   --disable-indevs
   --disable-outdevs
   --enable-decoder=aac
+  --enable-decoder=mjpeg
   --enable-parser=aac
   --enable-decoder=mp3
   --enable-demuxer=caf
+  --enable-demuxer=mov
+  --enable-demuxer=mp3
+  --enable-demuxer=mjpeg
+  --enable-protocols
 )
 
 cd ffmpeg
@@ -65,8 +72,8 @@ ARGS=(
   -I dist/ffmpeg/include
   -s WASM=1
   -s TOTAL_MEMORY=67108864
-  -s EXPORTED_FUNCTIONS="[decode]"  # export main and proxy_main funcs
-  -s EXPORTED_RUNTIME_METHODS="[addFunction]"
+  -s EXPORTED_FUNCTIONS="[_decode]"  # export main and proxy_main funcs
+  -s EXPORTED_RUNTIME_METHODS="[addFunction,cwrap]"
   -s RESERVED_FUNCTION_POINTERS=14
   -s FORCE_FILESYSTEM=1
   -o dist/assets/ffmpeg.js

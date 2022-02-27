@@ -23,12 +23,21 @@ function handleAudioFiles(files) {
   const file = files[0];
   reader.onload = function () {
     var buffer = new Uint8Array(this.result);
-    FS.writeFile(file.name, buffer);
-    const id = 'ffmpeg_callback_' + Date.now();
-    window[id] = function (data) {
-      console.log(data);
+    var name = file.name;
+    var id = 'ffmpeg_callback_' + Date.now();
+    FS.writeFile(name, buffer);
+    window[id] = function (meta) {
+      const channels = meta.channelsBuffer;
+      const context = new AudioContext();
+      const audioBuffer = context.createBuffer(meta.channels, channels[0].byteLength / meta.sampleSize, meta.sampleRate);
+      channels.forEach((ch, c) => audioBuffer.copyToChannel(ch, c));
+      play({
+        context,
+        audioBuffer,
+        meta: Object.assign({}, meta),
+      });
     }
-    module.decode(file.name, id)
+    Module.cwrap('decode', 'number', ['string', 'string'])(name, id);
   }
   reader.readAsArrayBuffer(file);
 }
