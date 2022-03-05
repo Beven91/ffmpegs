@@ -45,11 +45,10 @@ CONFIG_ARGS=(
   --disable-debug
   --disable-indevs
   --disable-outdevs
-  --enable-decoder=aac
-  --enable-decoder=mp3
-  --enable-demuxer=caf
-  --enable-demuxer=mov
-  --enable-demuxer=mp3
+  --enable-decoder=speex
+  --enable-encoder=libspeex
+  --enable-muxer=ogg
+  --enable-demuxer=ogg
   --enable-protocols
 )
 
@@ -64,12 +63,12 @@ make install
 cd ../
 
 ARGS=(
-  src/audio_decoder.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a dist/ffmpeg/lib/libavformat.a
+  src/al.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a dist/ffmpeg/lib/libavformat.a
   -Oz
   -I dist/ffmpeg/include
   -s WASM=1
   -s TOTAL_MEMORY=67108864
-  -s EXPORTED_FUNCTIONS="[_decode]"  # export main and proxy_main funcs
+  -s EXPORTED_FUNCTIONS="[_decode,_encode]"  # export main and proxy_main funcs
   -s EXPORTED_RUNTIME_METHODS="[addFunction,cwrap]"
   -s RESERVED_FUNCTION_POINTERS=14
   -s FORCE_FILESYSTEM=1

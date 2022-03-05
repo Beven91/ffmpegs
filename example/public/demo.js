@@ -41,3 +41,23 @@ function handleAudioFiles(files) {
   }
   reader.readAsArrayBuffer(file);
 }
+
+
+function handleEncoder(files){
+  const file = files[0];
+  const reader = new FileReader();
+  const file = files[0];
+  reader.onload = function () {
+    var buffer = new Uint8Array(this.result);
+    var name = 'demo.pcm';
+    var out = 'demo.ogg';
+    FS.writeFile(name, buffer);
+    var id = 'ffmpeg_e_callback_' + Date.now();
+    window[id] = function(buffer){
+      console.log(buffer);
+    }
+    Module.cwrap('encode', 'number', ['string', 'string','string'])(name,out,id);
+  }
+
+  reader.readAsArrayBuffer(file);
+}

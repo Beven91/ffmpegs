@@ -2,6 +2,7 @@
 #include <emscripten.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include "./util.c"
 
 #define C_CAST(type, variable) ((type)variable)
 #define REINTERPRET_CAST(type, variable) C_CAST(type, variable)
@@ -9,16 +10,6 @@
 #define RAW_OUT_ON_PLANAR 0
 
 FILE **outFiles;
-
-void LOG(const char *format, ...)
-{
-  char szBuffer[1024] = { 0 };
-  va_list ap;
-	va_start(ap, format);
-	vsnprintf(szBuffer,1024, format, ap);
-	va_end(ap);
-  printf("FFMPEG: %s \n",szBuffer);
-}
 
 float getSample(const AVCodecContext *codecCtx, uint8_t *buffer, int sampleIndex)
 {
@@ -131,7 +122,7 @@ int receiveFrame(AVCodecContext *codecCtx, AVFrame *frame)
 
 void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFrame *frame)
 {
-  LOG("flush start");
+  LOG("Flush start...");
   if (frame != NULL)
   {
     av_frame_free(&frame);
@@ -144,7 +135,6 @@ void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFram
   if (codecCtx != NULL)
   {
    // drainDecoder(codecCtx, frame);
-          LOG("flush start3");
     avcodec_close(codecCtx);
     avcodec_free_context(&codecCtx);
     for (int i = 0; i < codecCtx->channels; i++)
@@ -152,7 +142,7 @@ void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFram
       fclose(outFiles[i]);
     }
   }
-  LOG("flush end");
+  LOG("Flush end");
 }
 
 int decode(const char *filename, const char *callbackId)
@@ -163,7 +153,7 @@ int decode(const char *filename, const char *callbackId)
   AVCodecContext *codecCtx = NULL;
   AVFrame *frame = NULL;
 
-  LOG("file: %s, callback: %s",filename, callbackId);
+  LOG("input: %s, id: %s",filename, callbackId);
 
   // 1. 打开指定文件
   ret = avformat_open_input(&formatCtx, filename, NULL, 0);
