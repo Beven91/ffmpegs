@@ -45,8 +45,7 @@ CONFIG_ARGS=(
   --disable-debug
   --disable-indevs
   --disable-outdevs
-  --enable-decoder=speex
-  --enable-encoder=libspeex
+  --enable-libspeex
   --enable-muxer=ogg
   --enable-demuxer=ogg
   --enable-protocols
