@@ -46,7 +46,6 @@ function handleAudioFiles(files) {
 function handleEncoder(files){
   const file = files[0];
   const reader = new FileReader();
-  const file = files[0];
   reader.onload = function () {
     var buffer = new Uint8Array(this.result);
     var name = 'demo.pcm';

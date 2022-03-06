@@ -9,7 +9,7 @@
 #include <libavutil/common.h>
 #include <libavutil/frame.h>
 #include <libavutil/samplefmt.h>
-#include "./util.c"
+#include "./audio_decoder.c"
 
 /* check that a given sample format is supported by the encoder */
 static int check_sample_fmt(const AVCodec *codec, enum AVSampleFormat sample_fmt)
@@ -70,7 +70,7 @@ static int select_channel_layout(const AVCodec *codec)
 }
 
 static void encodeAudio(AVCodecContext *ctx, AVFrame *frame, AVPacket *pkt,
-                   FILE *output)
+                        FILE *output)
 {
   int ret;
 
@@ -100,7 +100,7 @@ static void encodeAudio(AVCodecContext *ctx, AVFrame *frame, AVPacket *pkt,
   }
 }
 
-int convertAudio(const char *inputFile, const char *outFile, enum AVCodecID codec_id, int bitRate)
+int convertAudio(const char *inputFile, const char *outFile, int bitRate)
 {
   const AVCodec *codec;
   AVCodecContext *c = NULL;
@@ -113,10 +113,11 @@ int convertAudio(const char *inputFile, const char *outFile, enum AVCodecID code
   float t, tincr;
 
   /* find the specity encoder */
-  codec = avcodec_find_encoder(codec_id);
+  codec = avcodec_find_encoder(AV_CODEC_ID_SPEEX);
+
   if (!codec)
   {
-    fprintf(stderr, "Codec not found\n");
+    LOG("Codec not found\n %d", AV_CODEC_ID_SPEEX);
     exit(1);
   }
 
@@ -151,9 +152,10 @@ int convertAudio(const char *inputFile, const char *outFile, enum AVCodecID code
     exit(1);
   }
 
-  inStream = fopen(inputFile,"rb");
+  inStream = fopen(inputFile, "rb");
   outStream = fopen(outFile, "wb");
-  if(!inStream) {
+  if (!inStream)
+  {
     fprintf(stderr, "Could not open %s\n", inputFile);
     exit(1);
   }
@@ -194,16 +196,20 @@ int convertAudio(const char *inputFile, const char *outFile, enum AVCodecID code
   int data_size = av_get_bytes_per_sample(c->sample_fmt);
 
   /* encode data from inputFile */
-  while(!feof(inStream)) {
+  while (!feof(inStream))
+  {
     /* make sure the frame is writable -- makes a copy if the encoder
      * kept a reference internally */
     ret = av_frame_make_writable(frame);
-    if (ret < 0){
+    if (ret < 0)
+    {
       exit(1);
     }
-    for (j = 0; j < c->frame_size; j++) {
-      for (k = 1; k < c->channels; k++) {
-        fread(frame->data[j] + data_size * i,1,data_size,inStream);
+    for (j = 0; j < c->frame_size; j++)
+    {
+      for (k = 1; k < c->channels; k++)
+      {
+        fread(frame->data[j] + data_size * i, 1, data_size, inStream);
         encodeAudio(c, frame, pkt, outStream);
       }
     }
@@ -221,21 +227,23 @@ int convertAudio(const char *inputFile, const char *outFile, enum AVCodecID code
   return 0;
 }
 
+int encode(const char *inputFile, const char *outFile, const char *callbackId)
+{
 
-int encode(const char *inputFile, const char *outFile,const char *callbackId){
-  int ret = convertAudio(inputFile,outFile,AV_CODEC_ID_SPEEX ,64000);
+  LOG("input %s out: %s callback: %s", inputFile, outFile, callbackId);
+
+  int ret = convertAudio(inputFile, outFile, 64000);
 
   EM_ASM({
-      var callbackId = UTF8ToString($0);
-      var callback = window[callbackId];
-      var ch = FS.readFile(outFile);
-      var buffer = new Float32Array(ch.buffer);
-      FS.unlink(outFile);
-      FS.unlink(inputFile);
-      callback(buffer);
-    },
-    callbackId,
-  );
+    var callbackId = UTF8ToString($0);
+    var callback = window[callbackId];
+    var ch = FS.readFile(outFile);
+    var buffer = new Float32Array(ch.buffer);
+    FS.unlink(outFile);
+    FS.unlink(inputFile);
+    callback(buffer);
+  },
+         callbackId);
 
   return ret;
 }
