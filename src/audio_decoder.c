@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <emscripten.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include "./util.c"

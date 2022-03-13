@@ -14,7 +14,7 @@ CONFIG_ARGS=(
   --cc="emcc"
   --cxx="em++"
   --ar="emar"
-  --nm="llvm-nm -g" \
+  --nm="llvm-nm -g" 
   --ranlib="emranlib"
   --prefix=$(pwd)/dist/ffmpeg
   --enable-cross-compile
@@ -27,11 +27,9 @@ CONFIG_ARGS=(
   --enable-gpl
   --enable-version3
   --disable-avdevice
-  --disable-swresample
   --disable-postproc
   --disable-avfilter
   --disable-programs
-  --disable-logging
   --disable-everything
   --disable-ffplay
   --disable-ffprobe
@@ -45,9 +43,12 @@ CONFIG_ARGS=(
   --disable-debug
   --disable-indevs
   --disable-outdevs
-  --enable-libspeex
-  --enable-muxer=ogg
+  --enable-encoder=opus
+  --enable-decoder=opus
   --enable-demuxer=ogg
+  --enable-muxer=ogg
+  --enable-decoder=pcm_s16le
+  --enable-demuxer=pcm_s16le
   --enable-protocols
 )
 
@@ -62,11 +63,16 @@ make install
 cd ../
 
 ARGS=(
-  src/audio_encoder.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a dist/ffmpeg/lib/libavformat.a
+  src/audio_encoder.c dist/ffmpeg/lib/libavcodec.a dist/ffmpeg/lib/libavutil.a dist/ffmpeg/lib/libavformat.a dist/ffmpeg/lib/libswresample.a
   -Oz
   -I dist/ffmpeg/include
   -s WASM=1
+  -s ASSERTIONS=2
   -s TOTAL_MEMORY=67108864
+  -g4 
+  -s ASSERTIONS=2 
+  -s STACK_OVERFLOW_CHECK=1
+  --source-map-base http://localhost:8080/
   -s EXPORTED_FUNCTIONS="[_decode,_encode]"  # export main and proxy_main funcs
   -s EXPORTED_RUNTIME_METHODS="[addFunction,cwrap]"
   -s RESERVED_FUNCTION_POINTERS=14

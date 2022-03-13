@@ -53,7 +53,15 @@ function handleEncoder(files){
     FS.writeFile(name, buffer);
     var id = 'ffmpeg_e_callback_' + Date.now();
     window[id] = function(buffer){
-      console.log(buffer);
+      const blob = new Blob(buffer);
+      const reader = new FileReader();
+      reader.onload = function(){
+        const a = document.createElement('a');
+        a.href = reader.result;
+        a.download= out;
+        a.click();
+      }
+      reader.readAsDataURL(blob);
     }
     Module.cwrap('encode', 'number', ['string', 'string','string'])(name,out,id);
   }

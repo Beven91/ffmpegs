@@ -27,6 +27,11 @@ Registry.launch({
   addResourceHandlers(registry) {
     registry
       .addResourceHandler("/**")
-      .addResourceLocations(path.resolve("example/public"), path.resolve("./dist/assets"));
+      .addResourceLocations(
+        path.resolve("example/public"), 
+        path.resolve("./dist/assets"),
+        path.resolve('./ffmpeg'),
+        path.resolve(''),
+      );
   },
 });
