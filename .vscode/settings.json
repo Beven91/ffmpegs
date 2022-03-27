@@ -8,6 +8,7 @@
     "initializer_list": "c",
     "utility": "c",
     "avcodec.h": "c",
-    "avformat.h": "c"
+    "avformat.h": "c",
+    "opt.h": "c"
   }
 }

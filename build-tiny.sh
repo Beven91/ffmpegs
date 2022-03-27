@@ -67,7 +67,7 @@ ARGS=(
   -s WASM=1
   -s ASSERTIONS=2
   -s TOTAL_MEMORY=67108864
-  -g4 
+  -gsource-map
   -s ASSERTIONS=2 
   -s STACK_OVERFLOW_CHECK=1
   --source-map-base http://localhost:8080/

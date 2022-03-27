@@ -43,27 +43,26 @@ function handleAudioFiles(files) {
 }
 
 
-function handleEncoder(files){
+function handleEncoder(files) {
   const file = files[0];
   const reader = new FileReader();
   reader.onload = function () {
     var buffer = new Uint8Array(this.result);
     var name = 'demo.pcm';
-    var out = 'demo.ogg';
+    var out = 'demo.opus';
     FS.writeFile(name, buffer);
     var id = 'ffmpeg_e_callback_' + Date.now();
-    window[id] = function(buffer){
-      const blob = new Blob(buffer);
-      const reader = new FileReader();
-      reader.onload = function(){
+    window[id] = function (ch) {
+      if (ch) {
+        const blob = new Blob([ch], { type: 'application/octet-stream' });
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = reader.result;
-        a.download= out;
+        a.href = url;
+        a.download = out;
         a.click();
       }
-      reader.readAsDataURL(blob);
     }
-    Module.cwrap('encode', 'number', ['string', 'string','string'])(name,out,id);
+    Module.cwrap('encode', 'number', ['string', 'string', 'string', 'string', 'int', 'int'])(name, out, id, 's16', 8000, 2);
   }
 
   reader.readAsArrayBuffer(file);

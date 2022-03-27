@@ -268,10 +268,10 @@ negotiator@0.6.3:
   resolved "https://registry.npmmirror.com/negotiator/-/negotiator-0.6.3.tgz#58e323a72fedc0d6f9cd4d31fe49f51479590ccd"
   integrity sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==
 
-node-web-mvc@^2.13.7:
-  version "2.13.7"
-  resolved "https://registry.npmmirror.com/node-web-mvc/-/node-web-mvc-2.13.7.tgz#1b5ec828afaa72cb53a7f6e03666b4ebddf60469"
-  integrity sha512-8p0vmAbJhSPaCdvnu1LCbCUXYyjfHuGa2C+tjf+Xb15Al53LCDo3TStXqxdgO35ybYehRT/65B5AFoS/8KZeBA==
+node-web-mvc@^2.13.8:
+  version "2.13.8"
+  resolved "https://registry.npmmirror.com/node-web-mvc/-/node-web-mvc-2.13.8.tgz#49546ec243da2f2831f691b39a7a26524c212fd0"
+  integrity sha512-D4Uc7ho5uuNKt+KD+kP3GOzKPpAWmpnYNLemHx+5jlfIABsEePVmglfwKslHPo2vZf7pSz9UTsKF9SHdK7SbxA==
   dependencies:
     busboy "^0.3.1"
     nodejs-hmr "^1.1.5"
@@ -430,10 +430,10 @@ type-is@~1.6.18:
     media-typer "0.3.0"
     mime-types "~2.1.24"
 
-typescript@^3.9.7:
-  version "3.9.10"
-  resolved "https://registry.npmmirror.com/typescript/-/typescript-3.9.10.tgz#70f3910ac7a51ed6bef79da7800690b19bf778b8"
-  integrity sha512-w6fIxVE/H1PkLKcCPsFqKE7Kv7QUwhU8qQY2MueZXWx5cPZdwFupLgKK3vntcK98BtNHZtAF4LA/yl2a7k8R6Q==
+typescript@^4.3.5:
+  version "4.6.3"
+  resolved "https://registry.npmmirror.com/typescript/-/typescript-4.6.3.tgz#eefeafa6afdd31d725584c67a0eaba80f6fc6c6c"
+  integrity sha512-yNIatDa5iaofVozS/uQJEl3JRWLKKGJKh6Yaiv0GLGSuhpFJe7P3SbHZ8/yjAHRQwKRoA6YZqlfjXWmVzoVSMw==
 
 unpipe@1.0.0, unpipe@~1.0.0:
   version "1.0.0"
