@@ -133,7 +133,7 @@ void flushResources(AVFormatContext *formatCtx, AVCodecContext *codecCtx, AVFram
   }
   if (codecCtx != NULL)
   {
-   // drainDecoder(codecCtx, frame);
+    // drainDecoder(codecCtx, frame);
     avcodec_close(codecCtx);
     avcodec_free_context(&codecCtx);
     for (int i = 0; i < codecCtx->channels; i++)
@@ -152,13 +152,13 @@ int decode(const char *filename, const char *callbackId)
   AVCodecContext *codecCtx = NULL;
   AVFrame *frame = NULL;
 
-  LOG("input: %s, id: %s",filename, callbackId);
+  LOG("input: %s, id: %s", filename, callbackId);
 
   // 1. 打开指定文件
   ret = avformat_open_input(&formatCtx, filename, NULL, 0);
   if (ret < 0)
   {
-    LOG("cannot open file: (%d) ->  %s", ret, filename);
+    LOG("cannot open file: %d  %s", ret, filename);
     goto flush;
   }
 
@@ -235,29 +235,27 @@ int decode(const char *filename, const char *callbackId)
   }
 
   // Prepare the packet.
-  AVPacket packet;
-  // Set default values.
-  av_init_packet(&packet);
+  AVPacket *packet = av_packet_alloc();
 
-  while ((ret = av_read_frame(formatCtx, &packet)) != AVERROR_EOF)
+  while ((ret = av_read_frame(formatCtx, packet)) != AVERROR_EOF)
   {
     if (ret != 0)
     {
       break; // Don't return, so we can clean up nicely.
     }
     // Does the packet belong to the correct stream?
-    if (packet.stream_index != streamIndex)
+    if (packet->stream_index != streamIndex)
     {
       // Free the buffers used by the frame and reset all fields.
-      av_packet_unref(&packet);
+      av_packet_unref(packet);
       continue;
     }
     // We have a valid packet => send it to the decoder.
-    if ((ret = avcodec_send_packet(codecCtx, &packet)) == 0)
+    if ((ret = avcodec_send_packet(codecCtx, packet)) == 0)
     {
       // The packet was sent successfully. We don't need it anymore.
       // => Free the buffers used by the frame and reset all fields.
-      av_packet_unref(&packet);
+      av_packet_unref(packet);
     }
     else
     {
@@ -276,45 +274,37 @@ int decode(const char *filename, const char *callbackId)
     }
   }
 
-  flush: 
+flush:
 
   flushResources(formatCtx, codecCtx, frame);
 
-  char szBuffer[1024] = { 0 };
-  av_strerror(ret,szBuffer,1024);
+  char szBuffer[1024] = {0};
+  av_strerror(ret, szBuffer, 1024);
   LOG(szBuffer);
 
   EM_ASM({
-      var data = {};
-      var callbackId = UTF8ToString($0);
-      var codecId = $1;
-      var callback = window[callbackId];
-      data.codecName = UTF8ToString($2);
-      data.codecLongName = UTF8ToString($3);
-      data.streamIndex = $4;
-      data.sampleFormat = UTF8ToString($5);
-      data.sampleRate = $6;
-      data.sampleSize = $7;
-      data.channels = $8;
-      data.channelsBuffer = [];
-      for(var i=0;i<data.channels;i++){
-        var filename = 'channel_' + i;
-        var ch = FS.readFile(filename);
-        FS.unlink(filename);
-        data.channelsBuffer.push(new Float32Array(ch.buffer));
-      }
-      callback(data);
-    },
-    callbackId,
-    codec != NULL ? codec->id : 0,
-    codec != NULL ? codec->name : NULL,
-    codec != NULL ? codec->long_name : NULL,
-    streamIndex,
-    codecCtx != NULL ? av_get_sample_fmt_name(codecCtx->sample_fmt) : NULL,
-    codecCtx != NULL ? codecCtx->sample_rate : 0,
-    codecCtx != NULL ? av_get_bytes_per_sample(codecCtx->sample_fmt) : 0,
-    codecCtx != NULL ? codecCtx->channels : 0
-  );
-  
+    var data = {};
+    var callbackId = UTF8ToString($0);
+    var codecId = $1;
+    var callback = window[callbackId];
+    data.codecName = UTF8ToString($2);
+    data.codecLongName = UTF8ToString($3);
+    data.streamIndex = $4;
+    data.sampleFormat = UTF8ToString($5);
+    data.sampleRate = $6;
+    data.sampleSize = $7;
+    data.channels = $8;
+    data.channelsBuffer = [];
+    for (var i = 0; i < data.channels; i++)
+    {
+      var filename = 'channel_' + i;
+      var ch = FS.readFile(filename);
+      FS.unlink(filename);
+      data.channelsBuffer.push(new Float32Array(ch.buffer));
+    }
+    callback(data);
+  },
+         callbackId, codec != NULL ? codec->id : 0, codec != NULL ? codec->name : NULL, codec != NULL ? codec->long_name : NULL, streamIndex, codecCtx != NULL ? av_get_sample_fmt_name(codecCtx->sample_fmt) : NULL, codecCtx != NULL ? codecCtx->sample_rate : 0, codecCtx != NULL ? av_get_bytes_per_sample(codecCtx->sample_fmt) : 0, codecCtx != NULL ? codecCtx->channels : 0);
+
   return ret;
 }

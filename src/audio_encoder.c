@@ -115,8 +115,6 @@ static int write_frame(AVFormatContext *fmt_ctx, AVCodecContext *c,
     pkt->dts = av_rescale_q(pkt->dts, c->time_base, st->time_base);
     pkt->duration = av_rescale_q(pkt->duration, c->time_base, st->time_base);
 
-    fprintf(stderr,"duration %d",pkt->duration);
-
     /* Write the compressed frame to the media file. */
     // log_packet(fmt_ctx, pkt);
     ret = av_interleaved_write_frame(fmt_ctx, pkt);
@@ -247,9 +245,9 @@ static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt,
 static void open_audio(AVFormatContext *oc, const AVCodec *codec,
                        OutputStream *ost, AVDictionary *opt_arg)
 {
-  AVCodecContext *c;
-  int nb_samples;
   int ret;
+  int nb_samples;
+  AVCodecContext *c;
   AVDictionary *opt = NULL;
 
   c = ost->enc;
@@ -317,7 +315,7 @@ static void open_audio(AVFormatContext *oc, const AVCodec *codec,
  * encode one audio frame and send it to the muxer
  * return 1 when encoding is finished, 0 otherwise
  */
-static int write_audio_frame(AVFormatContext *oc, OutputStream *ost, uint8_t *indata,int dst_nb_samples)
+static int write_audio_frame(AVFormatContext *oc, OutputStream *ost, uint8_t *indata, int dst_nb_samples)
 {
   AVCodecContext *c;
   int ret;
@@ -414,18 +412,20 @@ int encode(const char *inputFile, const char *filename, const char *callbackId)
   /* frame containing input raw audio */
   AVFrame *frame = audio_st.frame;
 
-  int in_nb_sample = av_rescale_rnd(frame->nb_samples, 44100, c->sample_rate, AV_ROUND_UP);
-  int readSize = in_nb_sample * av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO) * av_get_bytes_per_sample(c->sample_fmt);
+  int readSize = av_samples_get_buffer_size(NULL, 2, frame->nb_samples,c->sample_fmt, 1);
   char *read_buf = (char *)malloc(readSize);
+
+  LOG("out-samples: %d - \n", readSize);
 
   while (encode_audio)
   {
-    encode_audio = fread(read_buf, 1, readSize, inStream) > 0;
+    int size = fread(read_buf, 1, readSize, inStream);
+    encode_audio = size > 0;
     if (encode_audio)
     {
       const uint8_t *indata[AV_NUM_DATA_POINTERS] = {0};
       indata[0] = (uint8_t *)read_buf;
-      write_audio_frame(oc, &audio_st, indata,in_nb_sample);
+      write_audio_frame(oc, &audio_st, indata, frame->nb_samples);
     }
   }
 

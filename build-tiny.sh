@@ -47,8 +47,6 @@ CONFIG_ARGS=(
   --enable-decoder=opus
   --enable-demuxer=ogg
   --enable-muxer=ogg
-  --enable-decoder=pcm_s16le
-  --enable-demuxer=pcm_s16le
   --enable-protocols
 )
 
