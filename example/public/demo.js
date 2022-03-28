@@ -52,7 +52,9 @@ function handleEncoder(files) {
     var out = 'demo.opus';
     FS.writeFile(name, buffer);
     var id = 'ffmpeg_e_callback_' + Date.now();
+    var now = Date.now();
     window[id] = function (ch) {
+      console.log(Date.now() - now);
       if (ch) {
         const blob = new Blob([ch], { type: 'application/octet-stream' });
         const url = window.URL.createObjectURL(blob);
@@ -62,7 +64,7 @@ function handleEncoder(files) {
         a.click();
       }
     }
-    Module.cwrap('encode', 'number', ['string', 'string', 'string', 'string', 'int', 'int'])(name, out, id, 's16', 8000, 2);
+    Module.cwrap('encode', 'number', ['string', 'string', 'string', 'string', 'int', 'int','int'])(name, out, id, 's16', 8000, 2);
   }
 
   reader.readAsArrayBuffer(file);

@@ -284,9 +284,10 @@ flush:
 
   EM_ASM({
     var data = {};
+    var scope = typeof window == 'object' ? window : self;
     var callbackId = UTF8ToString($0);
     var codecId = $1;
-    var callback = window[callbackId];
+    var callback = scope[callbackId];
     data.codecName = UTF8ToString($2);
     data.codecLongName = UTF8ToString($3);
     data.streamIndex = $4;

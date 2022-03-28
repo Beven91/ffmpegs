@@ -93,7 +93,8 @@ static int write_frame(AVFormatContext *fmt_ctx, AVCodecContext *c,
 /* Add an output stream. */
 static int add_stream(OutputStream *ost, AVFormatContext *oc,
                       const AVCodec **codec,
-                      enum AVCodecID codec_id)
+                      enum AVCodecID codec_id,
+                      int bitRate)
 {
   AVCodecContext *c;
   int ret;
@@ -131,11 +132,12 @@ static int add_stream(OutputStream *ost, AVFormatContext *oc,
   }
   ost->enc = c;
 
+  LOG("or %d", bitRate);
   switch ((*codec)->type)
   {
   case AVMEDIA_TYPE_AUDIO:
     c->sample_fmt = (*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
-    c->bit_rate = 64000;
+    c->bit_rate = bitRate > 0 ? bitRate : 64000;
     c->sample_rate = 44100;
     if ((*codec)->supported_samplerates)
     {
@@ -329,7 +331,7 @@ static void close_stream(AVFormatContext *oc, OutputStream *ost)
   swr_free(&ost->swr_ctx);
 }
 
-int encode(const char *inputFile, const char *filename, const char *callbackId, const char *format, int ar, int ac)
+int encode(const char *inputFile, const char *filename, const char *callbackId, const char *format, int ar, int ac, int bitRate)
 {
   int ret;
   OutputStream audio_st = {0};
@@ -351,7 +353,7 @@ int encode(const char *inputFile, const char *filename, const char *callbackId, 
 
   // LOG("ffmpeg %d", avcodec_get_name(oc->oformat->audio_codec));
 
-  ret = add_stream(&audio_st, oc, &audio_codec, AV_CODEC_ID_OPUS);
+  ret = add_stream(&audio_st, oc, &audio_codec, AV_CODEC_ID_OPUS, bitRate);
 
   if (ret < 0)
   {
@@ -426,8 +428,9 @@ flush:
   avformat_free_context(oc);
 
   EM_ASM({
+    var scope = typeof window == 'object' ? window : self;
     var callbackId = UTF8ToString($0);
-    var callback = window[callbackId];
+    var callback = scope[callbackId];
     var outFile = UTF8ToString($1);
     var inputFile = UTF8ToString($2);
     var ret = $3;
@@ -437,7 +440,7 @@ flush:
     FS.unlink(outFile);
     callback(buffer);
   },
-         callbackId, filename, inputFile, ret);
+  callbackId, filename, inputFile, ret);
 
   return ret;
 }

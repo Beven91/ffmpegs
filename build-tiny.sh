@@ -6,7 +6,7 @@ emcc -v
 rm -rf dist/ffmpeg
 
 # configure FFMpeg with Emscripten
-CFLAGS="-s USE_PTHREADS -Oz"
+CFLAGS="-s USE_PTHREADS=0 -Oz"
 LDFLAGS="$CFLAGS -s INITIAL_MEMORY=33554432" # 33554432 bytes = 32 MB
 CONFIG_ARGS=(
   --objcc=emcc
@@ -31,10 +31,12 @@ CONFIG_ARGS=(
   --disable-avfilter
   --disable-programs
   --disable-everything
+  --disable-pthreads
   --disable-ffplay
   --disable-ffprobe
   --disable-asm
   --disable-doc
+  --disable-logging
   --disable-devices
   --disable-network
   --disable-hwaccels
