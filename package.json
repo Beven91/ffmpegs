@@ -1,22 +1,27 @@
 {
-  "name": "wasm-ffmpeg",
+  "name": "ffmpeg-js",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "types": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node ./example/www",
+    "start": "cd example && ts-node ./www",
+    "build": "tsc",
+    "dev":"watchify --entry src/index.ts --outfile dist/umd/ffmpeg-js.js -p [ tsify --noImplicitAny ]",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
+    "node-web-mvc": "^2.13.9",
+    "reflect-metadata": "^0.1.13",
     "@types/node": "^17.0.21",
-    "express": "^4.17.3",
+    "tsify":"^5.0.4",
+    "watchify":"^4.0.0",
     "ts-node": "^8.10.2",
     "typescript": "^4.3.5"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "node-web-mvc": "^2.13.8",
-    "reflect-metadata": "^0.1.13"
+    
   }
 }

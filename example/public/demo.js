@@ -1,71 +1,108 @@
-const play = o => {
-  const source = o.context.createBufferSource();
-  source.buffer = o.audioBuffer;
-  source.connect(o.context.destination);
-  source.start();
-};
 
-document.getElementById('play').onclick = async () => {
-  // for (const name of ['valid.wma', 'valid.mp4', 'invalid.aac']) {
-  //   await window.decoder.decode({
-  //     name,
-  //     href: '../inputs/' + name
-  //   }).then(o => {
-  //     console.log(name, o);
-  //     play(o);
-  //   }).catch(e => console.error('Decoding Error', e))
-  // }
-};
+var type = 'audio';
+// var type = 'audio-pure';
+var runtimeAudio = {};
+var audioContext = new AudioContext();
+var ffmpegPlayer = null;
+var ffmpeg = new FFMpeg.AVCodecWebAssembly(type, { debug: true });
+// 设置默认assembly
+FFMpeg.AVCodecWebAssembly.defaultAssembly = type;
 
-
-function handleAudioFiles(files) {
-  const reader = new FileReader();
-  const file = files[0];
-  reader.onload = function () {
-    var buffer = new Uint8Array(this.result);
-    var name = file.name;
-    var id = 'ffmpeg_callback_' + Date.now();
-    FS.writeFile(name, buffer);
-    window[id] = function (meta) {
-      const channels = meta.channelsBuffer;
-      const context = new AudioContext();
-      const audioBuffer = context.createBuffer(meta.channels, channels[0].byteLength / meta.sampleSize, meta.sampleRate);
-      channels.forEach((ch, c) => audioBuffer.copyToChannel(ch, c));
-      play({
-        context,
-        audioBuffer,
-        meta: Object.assign({}, meta),
-      });
-    }
-    Module.cwrap('decode', 'number', ['string', 'string'])(name, id);
+function playAudioBuffer(meta) {
+  var channelsBuffer = meta.channelsBuffer;
+  var sampleSize = meta.sampleSize;
+  var sampleRate = meta.sampleRate;
+  if (channelsBuffer[0].byteLength == 0) {
+    return Promise.resolve({});
   }
-  reader.readAsArrayBuffer(file);
+  var audioBuffer = audioContext.createBuffer(meta.channels, channelsBuffer[0].byteLength / sampleSize, sampleRate);
+  channelsBuffer.forEach(function (ch, c) {
+    audioBuffer.copyToChannel(ch, c)
+  });
+  return new Promise(function (resolve) {
+    var source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start();
+    source.onended = resolve;
+  });
 }
 
+function decodeAudioFile(files) {
+  ffmpeg.decodeAudioFile(files[0]).then(playAudioBuffer);
+}
+
+function decodeAudio(){
+  var url = type == 'audio' ? '/demo.opus' : 'aa.opus';
+  ffmpegPlayer = new FFMpeg.FFMpegAudioContext(url);
+  ffmpegPlayer.play();
+}
+
+function stopAudio(){
+  ffmpegPlayer && ffmpegPlayer.stop();
+}
+
+function continueAudio(){
+  ffmpegPlayer && ffmpegPlayer.play();
+}
+
+function readFile(file) {
+  return new Promise(function (resolve) {
+    var reader = new FileReader();
+    reader.onload = function () { resolve(reader.result); }
+    reader.readAsArrayBuffer(file);
+  })
+}
 
 function handleEncoder(files) {
-  const file = files[0];
-  const reader = new FileReader();
-  reader.onload = function () {
-    var buffer = new Uint8Array(this.result);
-    var name = 'demo.pcm';
-    var out = 'demo.opus';
-    FS.writeFile(name, buffer);
-    var id = 'ffmpeg_e_callback_' + Date.now();
-    var now = Date.now();
-    window[id] = function (ch) {
-      console.log(Date.now() - now);
-      if (ch) {
-        const blob = new Blob([ch], { type: 'application/octet-stream' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = out;
-        a.click();
-      }
+  var file = files[0];
+  var options = {
+    input: {
+      file: file,
+      format: 's16',
+      sampleRate: 48000,
+      channels: 2,
+    },
+    output: {
+      name: 'demo.opus',
+      bitRate: 96000
     }
-    Module.cwrap('encode', 'number', ['string', 'string', 'string', 'string', 'int', 'int','int'])(name, out, id, 's16', 8000, 2);
   }
+  ffmpeg.encodeAudioFile(options).then(onEncodeCompleted);
+}
 
-  reader.readAsArrayBuffer(file);
+function onEncodeCompleted(response) {
+  if (response.data) {
+    var ch = response.data;
+    var blob = new Blob([ch], { type: 'application/octet-stream' });
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'demo.opus';
+    a.click();
+  }
+}
+
+function handleEncoder2(files) {
+  var file = files[0];
+  var options = {
+    input: {
+      format: 's16',
+      sampleRate: 48000,
+      channels: 2,
+    },
+    output: {
+      name: 'demo.opus',
+      bitRate: 96000
+    }
+  }
+  readFile(file).then(function (buffer) {
+    ffmpeg.openAudioEncode(options).then(function (ret) {
+      var ch = buffer.slice(0, 4000000);
+      ffmpeg.encodeAudio(new Uint8Array(ch)).then(function () {
+        ffmpeg.closeAudioEncode().then(onEncodeCompleted);
+      })
+    });
+
+  });
 }

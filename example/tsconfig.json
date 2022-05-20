@@ -4,8 +4,7 @@
   },
   "compilerOptions": {
     "module": "CommonJS",
-    "target": "es5",
-    "allowJs": true,
+    "target": "es6",
     "noImplicitAny": false,
     "removeComments": true,
     "esModuleInterop": true,
@@ -19,10 +18,5 @@
   },
   "exclude": [
     "node_modules",
-    "example"
   ],
-  "include": [
-    "./src/**/*",
-    "./example/**/*"
-  ]
 }

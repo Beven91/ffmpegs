@@ -9,6 +9,23 @@
     "utility": "c",
     "avcodec.h": "c",
     "avformat.h": "c",
-    "opt.h": "c"
+    "opt.h": "c",
+    "mathematics.h": "c",
+    "timestamp.h": "c",
+    "channel_layout.h": "c",
+    "codec_id.h": "c",
+    "system_error": "c",
+    "string": "c",
+    "random": "c",
+    "limits": "c",
+    "frame.h": "c",
+    "url.h": "c",
+    "*.tcc": "c",
+    "exception": "c",
+    "memory_resource": "c",
+    "iosfwd": "c",
+    "new": "c",
+    "ostream": "c",
+    "streambuf": "c"
   }
 }

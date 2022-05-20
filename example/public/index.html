@@ -2,6 +2,9 @@
 <html>
 
 <head>
+  <meta charset="utf-8" />
+  <script src="eruda.js"></script>
+  <script>eruda.init();</script>
 </head>
 
 <body>
@@ -14,33 +17,27 @@
     <input type="file" onchange="handleVideoFiles(this.files)" onclick="setDecoder(1)">
   </div>
   <div style="margin: 20px;">
-    AudioContext:
-    <input type="file" onchange="handleAudioFiles(this.files)">
+    音频完整解码:
+    <input type="file" onchange="decodeAudioFile(this.files)">
   </div>
   <div style="margin: 20px;">
-    MSE:
-    <input type="file" onchange="handleAudioFiles(this.files)" onclick="setAudioDecoder(1)">
+    音频分片解码:
+    <div>
+      <button onclick="decodeAudio()">开始</button>
+      <button onclick="stopAudio()">暂停</button>
+      <button onclick="continueAudio()">继续</button>
+    </div>
   </div>
   <div style="margin: 20px;">
-    Encoder:
+    音频完整编码:
     <input type="file" onchange="handleEncoder(this.files)">
   </div>
   <div style="margin: 20px;">
-    <button id="play">Start Play</button>
+    音频分片编码:
+    <input type="file" onchange="handleEncoder2(this.files)">
   </div>
-  <div style="margin: 20px;">
-    <button id="play" onclick="fastForword()">FastForword</button>
-  </div>
-
-  <div style="margin-top: 10px">
-    <canvas id="playCanvas"></canvas>
-  </div>
-
-  <script src="vconsole.min.js"></script>
-  <script>(new VConsole());</script>
-  <script src="ffmpeg.js?v=5"></script>
+  <script src="umd/ffmpeg-js.js"></script>
   <script src="demo.js?v=5"></script>
-
 </body>
 
 </html>

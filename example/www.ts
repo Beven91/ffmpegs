@@ -9,10 +9,14 @@ const port = 8080;
 
 Registry.launch({
   port: port,
-  resource:{
-    gzipped:true,
-    mimeTypes:'application/javascript,text/css,application/wasm',
+  resource: {
+    gzipped: true,
+    mimeTypes: 'application/javascript,text/css,application/wasm',
   },
+  hot:{
+    cwd:path.join(__dirname)
+  },
+  cwd: path.join(__dirname, 'controllers'),
   onLaunch() {
     const url = `http://localhost:${port}`;
     console.log('--------------------------');
@@ -28,9 +32,9 @@ Registry.launch({
     registry
       .addResourceHandler("/**")
       .addResourceLocations(
-        path.resolve("example/public"), 
-        path.resolve("./dist/assets"),
-        path.resolve('./ffmpeg'),
+        path.resolve("public"),
+        path.resolve("../web-assemblies"),
+        path.resolve('../dist'),
         path.resolve(''),
       );
   },
