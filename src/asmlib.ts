@@ -1,4 +1,4 @@
-import createAssemlby from '../web-assemblies/audio';
+import createAssemlby from '../assembly/audio';
 
 export function log(debug: boolean, name: string, ...params: any[]) {
   if (debug == true) {
