@@ -1,6 +1,6 @@
 
-var type = 'audio';
-// var type = 'audio-pure';
+// var type = 'audio';
+var type = 'audio-pure';
 var runtimeAudio = {};
 var audioContext = new AudioContext();
 var ffmpegPlayer = null;
@@ -32,18 +32,27 @@ function decodeAudioFile(files) {
   ffmpeg.decodeAudioFile(files[0]).then(playAudioBuffer);
 }
 
-function decodeAudio(){
+function decodeAudio() {
   var url = type == 'audio' ? '/demo.opus' : 'aa.opus';
   ffmpegPlayer = new FFMpeg.FFMpegAudioContext(url);
+  ffmpegPlayer.addEventListener('play', () => console.log('play audio'));
+  ffmpegPlayer.addEventListener('pause', () => console.log('pause audio'));
+  // ffmpegPlayer.addEventListener('playing', (ctx) => console.log('playing:' + ctx.currentTime));
+  ffmpegPlayer.addEventListener('ended', () => console.log('play audio ended'));
+  ffmpegPlayer.addEventListener('close', () => console.log('audio closed'));
   ffmpegPlayer.play();
 }
 
-function stopAudio(){
-  ffmpegPlayer && ffmpegPlayer.stop();
+function stopAudio() {
+  ffmpegPlayer && ffmpegPlayer.pause();
 }
 
-function continueAudio(){
+function continueAudio() {
   ffmpegPlayer && ffmpegPlayer.play();
+}
+
+function seekAudio(){
+  ffmpegPlayer && (ffmpegPlayer.currentTime = 5);
 }
 
 function readFile(file) {

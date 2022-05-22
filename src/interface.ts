@@ -163,5 +163,17 @@ export interface OpenAudioDecodeResponse extends AssemblyResponse {
   /**
    * 去除头部，音频流的起始位置
    */
-  start:number
+  start: number
+}
+
+export declare type ProtocolReceiveCallback = (buffer: Uint8Array, done: boolean) => void
+
+export interface FFMpegProtocol {
+
+  /**
+   * 当接受到数据
+   * @param handler 
+   */
+  onReceive(handler: ProtocolReceiveCallback): void
+
 }

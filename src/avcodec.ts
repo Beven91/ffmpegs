@@ -21,7 +21,7 @@ export default class AVCodecWebAssembly extends WebAssemblyWorker {
    */
   static getInstance() {
     if (!this.defaultAssemblyInstance) {
-      this.defaultAssemblyInstance = new AVCodecWebAssembly(this.defaultAssembly,{ debug:true });
+      this.defaultAssemblyInstance = new AVCodecWebAssembly(this.defaultAssembly,{ debug:false });
     }
     return this.defaultAssemblyInstance;
   }

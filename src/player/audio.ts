@@ -1,4 +1,10 @@
+import { FFMpegProtocol } from '../interface';
 import AVCodecWebAssembly from '../avcodec';
+import AVEvents from './events';
+import HttpProtocol from '../protocol/http';
+
+declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed';
+declare type CancelEvent = () => void
 
 export interface FFMpegAudioContextOptions {
   /**
@@ -10,6 +16,35 @@ export interface FFMpegAudioContextOptions {
    * 是否预加载
    */
   preload?: boolean
+
+  /**
+   * 播放模式
+   * audio: 传统音频模式，会保留音频流同时可以回放
+   * infinite: 无限模式，考虑到内存占用播放的音频流会废弃，不可以回放
+   */
+  mode: 'audio' | 'infinite'
+
+}
+
+export interface AudioBufferQueue {
+  callback: Function
+  buffer: AudioBuffer
+}
+
+export interface FFMpegAudioBufferSource {
+  done: boolean
+  buffer: Uint8Array
+}
+
+export interface FFMpegAudioBufferSourceNode {
+  done: boolean
+  blob: Blob
+  channels: number
+  byteLength: number
+  sampleRate: number
+  sampleSize: number
+  startTime: number
+  endTime: number
 }
 
 export default class FFMpegAudioContext {
@@ -37,96 +72,278 @@ export default class FFMpegAudioContext {
   /**
    * 播放序列
    */
-  private playAudioPromise: Promise<void>
+  private audioBufferQueues: AudioBufferQueue[]
 
   /**
-   * 加载序列
+   * 解码序列
    */
-  private fetchAudioPromise: Promise<any>
+  private promiseAvcodecTasks: Promise<any>
 
   /**
-   * 播放状态
+   * 解码队列长度
    */
-  private status: 'init' | 'stop' | 'playing' | 'close'
+  private avcodeTaskCount: number
+
+  /**
+   * 当前已解码的数据节点
+   */
+  private cachedAudioBuffers: FFMpegAudioBufferSourceNode[]
+
+  /**
+   * 音频数据流
+   */
+  private streams: FFMpegProtocol
+
+  /**
+   * 事件容器
+   */
+  private events: AVEvents<AudioContextEvent>
+
+  /**
+   * 数据源节点列表
+   */
+  private segments: FFMpegAudioBufferSource[]
+
+  /**
+   * 截止目前当前音频总时长
+   */
+  private duration: number
+
+  /**
+   * 时间更新计时器id
+   */
+  private taskIntervalId: any
+
+  /**
+   * 当前播放节点下标
+   */
+  private sourceIndex: number
+
+  /**
+   * 是否继续指定任务
+   */
+  private runKeepping: boolean
+
+  /**
+   * 当前正在播放的节点
+   */
+  private currentSourceNode: AudioBufferSourceNode
+
+  /**
+   * 当前流总片段数
+   */
+  private totalSourceCount: number
+
+  /**
+   * 是否解码器已打开
+   */
+  private isOpenAvcodec: boolean
+
+  /**
+   * 是否正在播放中
+   */
+  private isPlaying: boolean
+
+  /**
+   * 是否在回退播放
+   */
+  private isRelaying: boolean
+
+  /**
+   * 重新播放的offset
+   */
+  private replayOffset: number
+
+  /**
+   * 当前播放器状态
+   */
+  public get state() {
+    return this.audioContext.state;
+  }
+
+  /**
+   * 当前播放时间进度
+   * @param url 
+   * @param options 
+   */
+  public get currentTime() {
+    return this.audioContext.currentTime;
+  }
+
+  /**
+   * 设置当前播放开始时间
+   */
+  public set currentTime(value: number) {
+    value = value || 0;
+    const source = this.cachedAudioBuffers.find((source) => value <= source.endTime);
+    const index = this.cachedAudioBuffers.indexOf(source);
+    if (source) {
+      this.sourceIndex = index;
+      this.runKeepping = true;
+      this.isRelaying = true;
+      this.avcodeTaskCount = 0;
+      this.audioBufferQueues.length = 0;
+      if (this.state == 'suspended') {
+        this.audioContext.resume();
+      }
+      this.replayOffset = source.endTime - value;
+      this.currentSourceNode.buffer = null;
+      this.currentSourceNode?.stop();
+      this.currentSourceNode?.disconnect();
+      this.audioBufferQueues.length = 0;
+      this.isPlaying = false;
+      this.runReplayAudioTask();
+    }
+  }
 
   constructor(url: string, options?: FFMpegAudioContextOptions) {
     this.url = url;
+    this.duration = 0;
+    this.totalSourceCount = -1;
+    this.avcodeTaskCount = 0;
+    this.sourceIndex = 0;
+    this.isOpenAvcodec = false;
+    this.segments = [];
+    this.audioBufferQueues = [];
+    this.cachedAudioBuffers = [];
     this.options = { ...(options || {}) } as FFMpegAudioContextOptions;
     this.options.minRead = Math.max(this.options.minRead || 0, 12 * 1024);
     this.avcodec = AVCodecWebAssembly.getInstance();
     this.audioContext = new AudioContext({});
-    this.playAudioPromise = Promise.resolve();
-    this.status = 'init';
+    this.audioBufferQueues.length = 0;
+    this.promiseAvcodecTasks = Promise.resolve({});
+    this.events = new AVEvents<AudioContextEvent>();
     if (this.options.preload) {
-      this.fetchAudioStream();
+      this.fetchAudioStreams(true);
     }
-  }
-
-  /**
-   * 构造一个支持最小数据块的读取流
-   * @param reader 
-   * @returns ReadableStream
-   */
-  private createStream(reader: ReadableStreamDefaultReader<Uint8Array>) {
-    return new ReadableStream({
-      start: (controller) => {
-        let index = -1;
-        let buffer: any[] = [];
-        const push = () => {
-          reader.read().then(async ({ value, done }) => {
-            if (done && buffer.length == 0) return;
-            controller.enqueue(value);
-            buffer = value ? buffer.concat(Array.from(value)) : buffer;
-            if (buffer.length < this.options.minRead && !done) {
-              return push();
-            }
-            index++;
-            const data = new Uint8Array(buffer);
-            buffer.length = 0;
-            await (index == 0 ? this.onReceiveHeader(data) : this.onReceive(data));
-            push();
-          });
-        }
-        push();
-      }
-    })
   }
 
   /**
    * 请求音频url信息
    * @returns 
    */
-  private async fetchAudioStream() {
-    if (!this.fetchAudioPromise) {
-      this.fetchAudioPromise = fetch(this.url).then((response) => {
-        const reader = response.body.getReader();
-        return new Response(this.createStream(reader), { headers: response.headers });
+  private async fetchAudioStreams(isPreload?: boolean) {
+    if (!this.streams) {
+      this.streams = new HttpProtocol(this.options.minRead, this.url);
+      this.streams.onReceive((buffer, done) => {
+        if (buffer.length > 0) {
+          this.totalSourceCount++;
+          this.segments.push({ done, buffer });
+        } else if (done) {
+          this.segments[this.segments.length - 1].done = true;
+        }
       });
     }
-    return this.fetchAudioPromise;
+    if (!isPreload && !this.taskIntervalId) {
+      const interval = 100;
+      this.runKeepping = true;
+      this.taskIntervalId = setInterval(() => this.processAudioTask(), interval);
+    }
   }
 
   /**
-   * 当接受到头部数据流
-   * @param buffer 
+   * 执行音频播放任务
    */
-  private onReceiveHeader(buffer: Uint8Array) {
-    return this.avcodec.openAudioDecode({ buffer: buffer });
+  private async processAudioTask() {
+    if (this.state == 'running') {
+      this.events.dispatchEvent('playing', this);
+    }
+    if (!this.runKeepping) {
+      return;
+    }
+    // 一批次最大5个片段
+    await this.promiseAvcodecTasks;
+    for (let i = 0; i < 5; i++) {
+      const source = this.segments.shift();
+      this.pushAudioDecodeTask(source);
+    }
   }
 
   /**
-   * 当接受到数据流
-   * @param buffer 接收到的数据块
+   * 添加解码任务
+   * @param index 
    */
-  private async onReceive(buffer: Uint8Array) {
-    const response = await this.avcodec.decodeAudio(buffer);
-    const channels = response.channelsBuffer;
+  private pushAudioDecodeTask(source: FFMpegAudioBufferSource) {
+    if (!source) return;
+    const header = !this.isOpenAvcodec;
+    if (this.isOpenAvcodec) {
+      this.avcodeTaskCount++;
+    }
+    this.isOpenAvcodec = true;
+    const buffer = source.buffer;
+    const avcodec = this.avcodec;
+    this.promiseAvcodecTasks = this.promiseAvcodecTasks.then(() => {
+      return header ? avcodec.openAudioDecode({ buffer }) : this.processAudioDecode(source);
+    });
+  }
+
+  /**
+   * 解码一段音频为PCM格式
+   * @param buffer 接收到的音频数据块
+   */
+  private async processAudioDecode(source: FFMpegAudioBufferSource) {
+    if (!source) return Promise.resolve({});
+    const done = source.done;
+    const response = await this.avcodec.decodeAudio(source.buffer);
+    const channelsBuffers = response.channelsBuffer;
     const context = this.audioContext;
     const { sampleRate, sampleSize } = response;
     if (response.channelsBuffer[0]?.byteLength > 0) {
-      const audioBuffer = context.createBuffer(response.channels, channels[0].byteLength / sampleSize, sampleRate);
-      channels.forEach((ch, c) => audioBuffer.copyToChannel(ch, c));
-      this.playBuffer(audioBuffer);
+      const blob = new Blob(channelsBuffers, { type: 'application/octet-stream' });
+      const audioBuffer = context.createBuffer(response.channels, channelsBuffers[0].byteLength / sampleSize, sampleRate);
+      channelsBuffers.forEach((ch, c) => audioBuffer.copyToChannel(ch, c));
+      const endTime = this.duration + audioBuffer.duration;
+      this.cachedAudioBuffers.push({
+        sampleRate,
+        sampleSize,
+        blob,
+        done,
+        channels: response.channels,
+        byteLength: channelsBuffers[0].byteLength,
+        startTime: this.duration,
+        endTime,
+      });
+      this.duration = endTime;
+      if (!this.isRelaying) {
+        this.pushPlayAudioTask(audioBuffer);
+      }
+    }
+  }
+
+  /**
+   * 添加播放队列
+   * @param no 
+   * @returns 
+   */
+  private pushPlayAudioTask(audioBuffer: AudioBuffer) {
+    return new Promise((resolve) => {
+      this.audioBufferQueues.push({ buffer: audioBuffer, callback: resolve });
+      if (!this.isPlaying) {
+        this.runPlayAudioTask();
+      }
+    })
+  }
+
+  /**
+   * 播放已解码队列的音频数据
+   * @param buffer 
+   * @returns 
+   */
+  private async runReplayAudioTask() {
+    const sourceNode = this.cachedAudioBuffers[this.sourceIndex];
+    console.log('playindex', this.sourceIndex, this.cachedAudioBuffers.length, sourceNode);
+    if (sourceNode) {
+      const context = this.audioContext;
+      const { channels, byteLength, sampleRate, sampleSize } = sourceNode;
+      const response = new Response(sourceNode.blob);
+      const buffer = await response.arrayBuffer();
+      const audioBuffer = context.createBuffer(channels, byteLength / sampleSize, sampleRate);
+      for (let i = 0; i < channels; i++) {
+        const channelBuffer = new Float32Array(buffer.slice(i * byteLength, i * byteLength + byteLength));
+        audioBuffer.copyToChannel(channelBuffer, i)
+      }
+      await this.pushPlayAudioTask(audioBuffer);
+      this.runReplayAudioTask();
     }
   }
 
@@ -134,41 +351,81 @@ export default class FFMpegAudioContext {
    * 播放音频buffer
    * @param buffer 
    */
-  private playBuffer(buffer: AudioBuffer) {
-    const context = this.audioContext;
-    this.playAudioPromise = this.playAudioPromise.then(() => {
-      return new Promise((resolve) => {
-        var source = context.createBufferSource();
-        source.buffer = buffer;
-        source.connect(context.destination);
-        source.start();
-        source.addEventListener('ended', () => resolve());
+  private runPlayAudioTask() {
+    this.isPlaying = true;
+    const queue = this.audioBufferQueues.shift();
+    if (queue) {
+      this.currentSourceNode?.stop();
+      this.currentSourceNode?.disconnect();
+      const context = this.audioContext;
+      const source = context.createBufferSource();
+      this.currentSourceNode = source;
+      source.buffer = queue.buffer;
+      source.connect(context.destination);
+      source.addEventListener('ended', () => {
+        if (source.buffer == null) {
+          // 如果时放弃掉的播放，则部响应回调
+          return;
+        }
+        queue.callback && queue.callback();
+        this.runPlayAudioTask();
+        this.sourceIndex++;
+        this.avcodeTaskCount = Math.max(0, this.avcodeTaskCount - 1);
+        if (this.sourceIndex == this.totalSourceCount) {
+          this.runKeepping = false;
+          this.audioContext.suspend();
+          this.events.dispatchEvent('ended');
+        }
       });
-    });
+      source.start(0, this.replayOffset);
+      this.replayOffset = 0;
+    } else {
+      this.isPlaying = false;
+    }
   }
 
   /**
    * 开始播放
    */
   play() {
-    this.status = 'playing';
-    this.fetchAudioStream();
+    this.runKeepping = true;
+    this.fetchAudioStreams();
     this.audioContext.resume();
+    this.events.dispatchEvent('play', this);
   }
 
   /**
    * 暂停播放
    */
-  stop() {
-    this.status = 'stop';
+  pause() {
+    this.runKeepping = false;
     this.audioContext.suspend();
+    this.events.dispatchEvent('pause', this);
   }
 
   /**
    * 关闭播放器
    */
   close() {
+    clearInterval(this.taskIntervalId);
     this.audioContext.close();
-    this.status = 'close';
+    this.events.dispatchEvent('closed', this);
+  }
+
+  /**
+   * 添加事件监听
+   */
+  addEventListener(name: AudioContextEvent, handler: () => void): CancelEvent {
+    this.events.addEventListener(name, handler);
+    return () => {
+      this.events.removeEventListener(name, handler);
+    }
+  }
+
+  /**
+   * 移除事件监听
+   */
+  removeEventListener(name: AudioContextEvent, handler?: () => void) {
+    this.events.removeEventListener(name, handler);
   }
 }

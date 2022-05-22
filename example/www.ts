@@ -33,7 +33,7 @@ Registry.launch({
       .addResourceHandler("/**")
       .addResourceLocations(
         path.resolve("public"),
-        path.resolve("../web-assemblies"),
+        path.resolve("../assembly"),
         path.resolve('../dist'),
         path.resolve(''),
       );
