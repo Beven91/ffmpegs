@@ -331,7 +331,6 @@ export default class FFMpegAudioContext {
    */
   private async runReplayAudioTask() {
     const sourceNode = this.cachedAudioBuffers[this.sourceIndex];
-    console.log('playindex', this.sourceIndex, this.cachedAudioBuffers.length, sourceNode);
     if (sourceNode) {
       const context = this.audioContext;
       const { channels, byteLength, sampleRate, sampleSize } = sourceNode;
