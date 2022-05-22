@@ -155,6 +155,11 @@ export default class FFMpegAudioContext {
   private replayOffset: number
 
   /**
+   * 无效累计播放时长
+   */
+  private unsedDuration: number
+
+  /**
    * 当前播放器状态
    */
   public get state() {
@@ -167,7 +172,7 @@ export default class FFMpegAudioContext {
    * @param options 
    */
   public get currentTime() {
-    return this.audioContext.currentTime;
+    return this.audioContext.currentTime - this.unsedDuration;
   }
 
   /**
@@ -186,6 +191,7 @@ export default class FFMpegAudioContext {
       if (this.state == 'suspended') {
         this.audioContext.resume();
       }
+      this.unsedDuration = this.audioContext.currentTime - value;
       this.replayOffset = source.endTime - value;
       this.currentSourceNode.buffer = null;
       this.currentSourceNode?.stop();
@@ -199,6 +205,8 @@ export default class FFMpegAudioContext {
   constructor(url: string, options?: FFMpegAudioContextOptions) {
     this.url = url;
     this.duration = 0;
+    this.replayOffset = 0;
+    this.unsedDuration = 0;
     this.totalSourceCount = -1;
     this.avcodeTaskCount = 0;
     this.sourceIndex = 0;
