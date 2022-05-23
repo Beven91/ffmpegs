@@ -1,6 +1,6 @@
 
-// var type = 'audio';
-var type = 'audio-pure';
+var type = 'audio';
+// var type = 'audio-pure';
 var runtimeAudio = {};
 var audioContext = new AudioContext();
 var ffmpegPlayer = null;

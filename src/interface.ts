@@ -126,6 +126,7 @@ export interface AVEncoderResponse extends AssemblyResponse {
 
 export interface WorkderRequest<T = any> {
   id?: string
+  idKey?:string
   name?: string
   action: 'init' | AssemblyExportKeys
   debug?: boolean

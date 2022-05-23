@@ -2,6 +2,10 @@ import type { AssemblyResponse, AssemblyWorkerSelf, FFmpegAssemblyWrapInstance, 
 import { polyfill, createFFmepgAssembly, log } from './asmlib';
 import FFMpegAssemblyAdapter from './ffmpeg';
 
+const generate = {
+  id: 0
+}
+
 /**
  * 当前函数为webassembly在worker中执行的代码
  */
@@ -54,14 +58,14 @@ function WebAssemblyWorkerJs() {
     const request = ev.data;
     log(request.debug, `>> ${request.action}`, request);
     const assembly = await fetchWebAssembly(request.name, request.data);
-    const adapter = new thisWorker.FFMpegAssemblyAdapter(assembly.instance.exports, assemblyWrapInstance, request.debug);
+    const adapter = new thisWorker.FFMpegAssemblyAdapter(assembly.instance.exports, assemblyWrapInstance,request.idKey, request.debug);
     if (assemblyRuntime.callback) {
       assemblyRuntime.callback(assembly.instance);
       assemblyRuntime.callback = null;
     }
     switch (request.action) {
       case 'init':
-        invokeCallback(request);
+        invokeCallback(request, { ret: 0, message: 'ok' });
         break;
       default:
         try {
@@ -83,13 +87,15 @@ function WebAssemblyWorkerJs() {
  */
 const blob = new Blob([polyfill, createFFmepgAssembly, `(${FFMpegAssemblyAdapter.toString()}());`, WebAssemblyWorkerJs.toString(), ';WebAssemblyWorkerJs();']);
 const assemblyWorker = new Worker(window.URL.createObjectURL(blob));
-assemblyWorker.onerror = function(e){
+assemblyWorker.onerror = function (e) {
   console.error(e);
 }
 
 export default class WebAssemblyWorker {
 
   private debug: boolean
+
+  private idKey: string
 
   /**
    * 当前assembly类型名
@@ -114,6 +120,7 @@ export default class WebAssemblyWorker {
     this.name = name;
     this.responseCallbacks = {};
     this.debug = debug;
+    this.idKey = `ffmpeg_${generate.id++}`
     assemblyWorker.addEventListener('message', (response: MessageEvent<WorkerResponse>) => {
       const id = response.data?.id;
       const callback = this.responseCallbacks[id];
@@ -132,10 +139,12 @@ export default class WebAssemblyWorker {
   async invoke(data: WorkderRequest): Promise<AssemblyResponse> {
     // 等待初始化结束
     await Promise.resolve(this.assemblyPromise);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const id = Date.now();
-      this.responseCallbacks[id] = resolve;
-      assemblyWorker.postMessage({ ...data, id, name: this.name, debug: this.debug });
+      this.responseCallbacks[id] = (data) => {
+        data?.ret != 0 ? reject(data) : resolve(data);
+      };
+      assemblyWorker.postMessage({ ...data, idKey: this.idKey, id, name: this.name, debug: this.debug });
     });
   }
 }
