@@ -1,9 +1,9 @@
 import AVCodecWebAssembly from './avcodec';
-import FFMpegAudioContext from './player/audio';
+import Audio from './player/audio';
 
 const FFmpeg = {
   AVCodecWebAssembly,
-  FFMpegAudioContext
+  Audio
 }
 
 export default FFmpeg;
