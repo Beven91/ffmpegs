@@ -10,20 +10,9 @@ export default class AVCodecWebAssembly extends WebAssemblyWorker {
 
   public static defaultAssembly: keyof typeof AVCodecWebAssembly.AvariableWebAssembies
 
-  private static defaultAssemblyInstance: AVCodecWebAssembly
-
-  constructor(type: keyof typeof AVCodecWebAssembly.AvariableWebAssembies, options?: { debug: boolean }) {
+  constructor(type?: keyof typeof AVCodecWebAssembly.AvariableWebAssembies, options?: { debug: boolean }) {
+    type = type || AVCodecWebAssembly.defaultAssembly;
     super(type, AVCodecWebAssembly.AvariableWebAssembies[type], (options || {}).debug);
-  }
-
-  /**
-   * 获取默认的assembly实例
-   */
-  static getInstance() {
-    if (!this.defaultAssemblyInstance) {
-      this.defaultAssemblyInstance = new AVCodecWebAssembly(this.defaultAssembly,{ debug:true });
-    }
-    return this.defaultAssemblyInstance;
   }
 
   /**

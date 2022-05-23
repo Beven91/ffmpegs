@@ -6,6 +6,11 @@ import HttpProtocol from '../protocol/http';
 declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error';
 declare type CancelEvent = () => void
 
+const globalAudioContext = {
+  // 当前正在播放的音频实例
+  current: null as FFMpegAudioContext
+}
+
 export interface FFMpegAudioContextOptions {
   /**
    * 在读取音频url返回数据时，最小数据块大小
@@ -216,7 +221,7 @@ export default class FFMpegAudioContext {
     this.cachedAudioBuffers = [];
     this.options = { ...(options || {}) } as FFMpegAudioContextOptions;
     this.options.minRead = Math.max(this.options.minRead || 0, 12 * 1024);
-    this.avcodec = AVCodecWebAssembly.getInstance();
+    this.avcodec = new AVCodecWebAssembly(null, { debug: true });
     this.audioContext = new AudioContext({});
     this.audioBufferQueues.length = 0;
     this.promiseAvcodecTasks = Promise.resolve({});
@@ -255,6 +260,7 @@ export default class FFMpegAudioContext {
    */
   private async processAudioTask() {
     if (this.state == 'running') {
+      globalAudioContext.current = this;
       this.events.dispatchEvent('playing', this);
     }
     if (!this.runKeepping) {
@@ -285,6 +291,11 @@ export default class FFMpegAudioContext {
     });
   }
 
+  /**
+   * 打开音频解码器
+   * @param buffer 
+   * @returns 
+   */
   private async openAudioDecode(buffer: Uint8Array) {
     try {
       return await this.avcodec.openAudioDecode({ buffer });
@@ -412,6 +423,7 @@ export default class FFMpegAudioContext {
    * 开始播放
    */
   play() {
+    globalAudioContext.current?.pause();
     this.runKeepping = true;
     this.fetchAudioStreams();
     if (this.cachedAudioBuffers.length > 0) {

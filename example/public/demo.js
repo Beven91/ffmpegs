@@ -34,7 +34,7 @@ function decodeAudioFile(files) {
 
 function decodeAudio() {
   var url = type == 'audio' ? '/demo.opus' : 'aa.opus';
-  ffmpegPlayer = new FFMpeg.FFMpegAudioContext(url);
+  ffmpegPlayer = new FFMpeg.Audio(url);
   ffmpegPlayer.addEventListener('play', () => console.log('play audio'));
   ffmpegPlayer.addEventListener('pause', () => console.log('pause audio'));
   ffmpegPlayer.addEventListener('playing', (ctx) => console.log('playing:' + ctx.currentTime));

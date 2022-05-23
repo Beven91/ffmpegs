@@ -241,8 +241,7 @@ export default function GetFFMpegAssemblyAdapter() {
     closeAudioDecode(request: WorkderRequest): AssemblyResponse {
       const id = this.instanceId;
       const ret = this.assemblyWrapInstance.cwrap('close_audio_decode', 'int', ['string'])(id);
-      const content = this.fs.readFile('global_out.opus');
-      return { ret, message: '', data: content };
+      return { ret, message: '', data: null };
     }
   }
 
