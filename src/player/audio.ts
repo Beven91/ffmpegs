@@ -221,7 +221,7 @@ export default class FFMpegAudioContext {
     this.cachedAudioBuffers = [];
     this.options = { ...(options || {}) } as FFMpegAudioContextOptions;
     this.options.minRead = Math.max(this.options.minRead || 0, 12 * 1024);
-    this.avcodec = new AVCodecWebAssembly(null, { debug: true });
+    this.avcodec = new AVCodecWebAssembly();
     this.audioContext = new AudioContext({});
     this.audioBufferQueues.length = 0;
     this.promiseAvcodecTasks = Promise.resolve({});
