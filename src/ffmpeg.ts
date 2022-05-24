@@ -15,11 +15,11 @@ export default function GetFFMpegAssemblyAdapter() {
 
     private readonly releaseHandlers = [] as Function[]
 
-    private readonly instanceId: string
+    private readonly instanceId: number
 
     private debug: boolean;
 
-    constructor(assemblyInstance: FFmepgAssemblyInstance, assemblyWrapInstance: FFmpegAssemblyWrapInstance, idKey: string, debug: boolean) {
+    constructor(assemblyInstance: FFmepgAssemblyInstance, assemblyWrapInstance: FFmpegAssemblyWrapInstance, idKey: number, debug: boolean) {
       this.assemblyInstance = assemblyInstance;
       this.assemblyWrapInstance = assemblyWrapInstance;
       this.instanceId = idKey;
@@ -173,7 +173,7 @@ export default function GetFFMpegAssemblyAdapter() {
     openAudioEncode(request: WorkderRequest<AVEncoderRequest>): AssemblyResponse {
       const { input, output } = request.data as AVEncoderRequest;
       const id = this.instanceId;
-      const open = this.assemblyWrapInstance.cwrap('open_audio_encode', 'int', ['string', 'string', 'string', 'int', 'int', 'int']);
+      const open = this.assemblyWrapInstance.cwrap('open_audio_encode', 'int', ['int', 'string', 'string', 'int', 'int', 'int']);
       const ret = open(id, output.name, input.format, input.sampleRate, input.channels, output.bitRate);
       return { ret, message: '' };
     }
@@ -187,7 +187,7 @@ export default function GetFFMpegAssemblyAdapter() {
       const name = `audio_encode_${Date.now()}.pcm`;
       await this.writeFile(name, request.data);
       const id = this.instanceId;
-      const ret = this.assemblyWrapInstance.cwrap('audio_encode', 'int', ['string', 'string'])(id, name);
+      const ret = this.assemblyWrapInstance.cwrap('audio_encode', 'int', ['int', 'string'])(id, name);
       return { ret, message: '' };
     }
 
@@ -196,7 +196,7 @@ export default function GetFFMpegAssemblyAdapter() {
      */
     closeAudioEncode(request: WorkderRequest): AVEncoderResponse {
       const id = this.instanceId;
-      const content = this.assemblyWrapInstance.cwrap('close_audio_encode', 'string', ['string', 'string'])(id);
+      const content = this.assemblyWrapInstance.cwrap('close_audio_encode', 'string', ['int', 'string'])(id);
       const response = this.deserialize<AVEncoderResponse>(content);
       response.data = this.readFile(response.name);
       this.fs.unlink(response.name);
@@ -210,7 +210,7 @@ export default function GetFFMpegAssemblyAdapter() {
       const name = `audio_header_${Date.now()}.pcm`;
       await this.writeFile(name, request.data.buffer);
       const id = this.instanceId;
-      const content = this.assemblyWrapInstance.cwrap('open_audio_decode', 'string', ['string', 'string'])(id, name);
+      const content = this.assemblyWrapInstance.cwrap('open_audio_decode', 'string', ['int', 'string'])(id, name);
       const response = this.deserialize<OpenAudioDecodeResponse>(content);
       return response;
     }
@@ -222,7 +222,7 @@ export default function GetFFMpegAssemblyAdapter() {
       const name = `audio_decode_${Date.now()}.pcm`;
       await this.writeFile(name, request.data);
       const id = this.instanceId;
-      const content = this.assemblyWrapInstance.cwrap('audio_decode', 'string', ['string', 'string'])(id, name);
+      const content = this.assemblyWrapInstance.cwrap('audio_decode', 'string', ['int', 'string'])(id, name);
       const response = this.deserialize<AVDecoderResponse>(content);
       const prefix = response.prefix;
       response.channelsBuffer = [];
@@ -240,7 +240,7 @@ export default function GetFFMpegAssemblyAdapter() {
      */
     closeAudioDecode(request: WorkderRequest): AssemblyResponse {
       const id = this.instanceId;
-      const ret = this.assemblyWrapInstance.cwrap('close_audio_decode', 'int', ['string'])(id);
+      const ret = this.assemblyWrapInstance.cwrap('close_audio_decode', 'int', ['int'])(id);
       return { ret, message: '', data: null };
     }
   }

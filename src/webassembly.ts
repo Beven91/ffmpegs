@@ -95,7 +95,7 @@ export default class WebAssemblyWorker {
 
   private debug: boolean
 
-  private idKey: string
+  private idKey: number
 
   /**
    * 当前assembly类型名
@@ -120,7 +120,7 @@ export default class WebAssemblyWorker {
     this.name = name;
     this.responseCallbacks = {};
     this.debug = debug;
-    this.idKey = `ffmpeg_${generate.id++}`
+    this.idKey =generate.id ++;
     assemblyWorker.addEventListener('message', (response: MessageEvent<WorkerResponse>) => {
       const id = response.data?.id;
       const callback = this.responseCallbacks[id];

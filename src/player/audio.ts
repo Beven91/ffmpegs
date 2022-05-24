@@ -34,6 +34,7 @@ export interface FFMpegAudioContextOptions {
 export interface AudioBufferQueue {
   callback: Function
   buffer: AudioBuffer
+  done: boolean
 }
 
 export interface FFMpegAudioBufferSource {
@@ -135,11 +136,6 @@ export default class FFMpegAudioContext {
   private currentSourceNode: AudioBufferSourceNode
 
   /**
-   * 当前流总片段数
-   */
-  private totalSourceCount: number
-
-  /**
    * 是否解码器已打开
    */
   private isOpenAvcodec: boolean
@@ -212,7 +208,6 @@ export default class FFMpegAudioContext {
     this.duration = 0;
     this.replayOffset = 0;
     this.unsedDuration = 0;
-    this.totalSourceCount = -1;
     this.avcodeTaskCount = 0;
     this.sourceIndex = 0;
     this.isOpenAvcodec = false;
@@ -241,7 +236,6 @@ export default class FFMpegAudioContext {
       this.streams = new HttpProtocol(this.options.minRead, this.url);
       this.streams.onReceive((buffer, done) => {
         if (buffer.length > 0) {
-          this.totalSourceCount++;
           this.segments.push({ done, buffer });
         } else if (done && this.segments.length > 0) {
           this.segments[this.segments.length - 1].done = true;
@@ -260,7 +254,6 @@ export default class FFMpegAudioContext {
    */
   private async processAudioTask() {
     if (this.state == 'running') {
-      globalAudioContext.current = this;
       this.events.dispatchEvent('playing', this);
     }
     if (!this.runKeepping) {
@@ -288,6 +281,8 @@ export default class FFMpegAudioContext {
     const buffer = source.buffer;
     this.promiseAvcodecTasks = this.promiseAvcodecTasks.then(() => {
       return header ? this.openAudioDecode(buffer) : this.processAudioDecode(source);
+    }).catch((ex) => {
+      this.events.dispatchEvent('error', ex);
     });
   }
 
@@ -338,7 +333,7 @@ export default class FFMpegAudioContext {
         this.avcodec.closeAudioDecode();
       }
       if (!this.isRelaying) {
-        this.pushPlayAudioTask(audioBuffer);
+        this.pushPlayAudioTask(audioBuffer, done);
       }
     }
   }
@@ -348,9 +343,9 @@ export default class FFMpegAudioContext {
    * @param no 
    * @returns 
    */
-  private pushPlayAudioTask(audioBuffer: AudioBuffer) {
+  private pushPlayAudioTask(audioBuffer: AudioBuffer, done: boolean) {
     return new Promise((resolve) => {
-      this.audioBufferQueues.push({ buffer: audioBuffer, callback: resolve });
+      this.audioBufferQueues.push({ done, buffer: audioBuffer, callback: resolve });
       if (!this.isPlaying) {
         this.runPlayAudioTask();
       }
@@ -374,7 +369,7 @@ export default class FFMpegAudioContext {
         const channelBuffer = new Float32Array(buffer.slice(i * byteLength, i * byteLength + byteLength));
         audioBuffer.copyToChannel(channelBuffer, i)
       }
-      await this.pushPlayAudioTask(audioBuffer);
+      await this.pushPlayAudioTask(audioBuffer, sourceNode.done);
       this.runReplayAudioTask();
     }
   }
@@ -384,6 +379,7 @@ export default class FFMpegAudioContext {
    * @param buffer 
    */
   private runPlayAudioTask() {
+    if (globalAudioContext.current != this) return;
     this.isPlaying = true;
     const queue = this.audioBufferQueues.shift();
     if (queue) {
@@ -403,7 +399,7 @@ export default class FFMpegAudioContext {
         this.runPlayAudioTask();
         this.sourceIndex++;
         this.avcodeTaskCount = Math.max(0, this.avcodeTaskCount - 1);
-        if (this.sourceIndex == this.totalSourceCount) {
+        if (queue.done) {
           this.runKeepping = false;
           this.audioContext.suspend();
           this.events.dispatchEvent('ended');
@@ -429,6 +425,7 @@ export default class FFMpegAudioContext {
     if (this.cachedAudioBuffers.length > 0) {
       this.audioContext.resume();
     }
+    globalAudioContext.current = this;
     this.events.dispatchEvent('play', this);
   }
 
