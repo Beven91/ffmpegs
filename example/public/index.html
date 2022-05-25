@@ -31,6 +31,9 @@
       <button onclick="stopAudio(true)">暂停</button>
       <button onclick="continueAudio(true)">继续</button>
     </div>
+    <div style="margin-top:20px">
+      <input type="file" value="选择文件" onchange="decodeAudioFilePlay(this.files)">
+    </div>
   </div>
   <div style="margin: 20px;">
     音频完整编码:

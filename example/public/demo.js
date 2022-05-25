@@ -33,6 +33,11 @@ function decodeAudioFile(files) {
   ffmpeg.decodeAudioFile(files[0]).then(playAudioBuffer);
 }
 
+function decodeAudioFilePlay(files) {
+  const player = new FFmpegJs.Audio(files[0]);
+  player.play();
+}
+
 function decodeAudio2() {
   ffmpegPlayer2.play();
 }
