@@ -5,9 +5,9 @@ var runtimeAudio = {};
 var audioContext = new AudioContext();
 var ffmpegPlayer = null;
 var ffmepgPlayer2 = null;
-var ffmpeg = new FFMpeg.AVCodecWebAssembly(type, { debug: true });
+var ffmpeg = new FFmpegJs(type, { debug: true });
 // 设置默认assembly
-FFMpeg.AVCodecWebAssembly.defaultAssembly = type;
+FFmpegJs.defaultAssembly = type;
 
 function playAudioBuffer(meta) {
   var channelsBuffer = meta.channelsBuffer;
@@ -39,7 +39,7 @@ function decodeAudio2() {
 
 function decodeAudio() {
   var url = type == 'audio' ? '/demo.opus' : 'aa.opus';
-  ffmpegPlayer = new FFMpeg.Audio(url);
+  ffmpegPlayer = new FFmpegJs.Audio(url);
   ffmpegPlayer.addEventListener('play', () => console.log('play audio'));
   ffmpegPlayer.addEventListener('pause', () => console.log('pause audio'));
   ffmpegPlayer.addEventListener('playing', (ctx) => console.log('playing:' + ctx.currentTime));

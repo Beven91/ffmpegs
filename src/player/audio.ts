@@ -1,5 +1,5 @@
 import { FFMpegProtocol } from '../interface';
-import AVCodecWebAssembly from '../avcodec';
+import AVCodecWebAssembly from '../index';
 import AVEvents from './events';
 import HttpProtocol from '../protocol/http';
 
