@@ -1,4 +1,4 @@
-import { FFMpegProtocol } from '../interface';
+import FFMpegProtocol from '../protocol/base';
 import AVCodecWebAssembly from '../index';
 import AVEvents from './events';
 import loadAvcodecInput from '../protocol';
@@ -240,6 +240,10 @@ export default class FFMpegAudioContext {
   private async fetchAudio(isPreload?: boolean) {
     if (!this.streams) {
       this.streams = loadAvcodecInput(this.url, this.options.minRead);
+      this.streams.onError((ex) => {
+        this.close();
+        this.events.dispatchEvent('error', ex);
+      });
       this.streams.onReceive((buffer, done) => {
         if (buffer.length > 0) {
           this.segments.push({ done, buffer });
@@ -465,6 +469,7 @@ export default class FFMpegAudioContext {
    * 关闭播放器
    */
   close() {
+    this.runKeepping = false;
     clearInterval(this.taskIntervalId);
     this.audioContext.close();
     this.events.dispatchEvent('closed', this);

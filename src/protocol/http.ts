@@ -1,37 +1,24 @@
-import { FFMpegProtocol, ProtocolReceiveCallback } from "../interface";
+import FFMpegProtocol from './base';
 
-export default class HttpProtocol implements FFMpegProtocol {
+export default class HttpProtocol extends FFMpegProtocol<string> {
 
-  minRead: number
+  buffer = [] as any[]
 
-  private receiveCallback: ProtocolReceiveCallback
-
-  private streams: ReadableStreamDefaultReader<Uint8Array>
-
-  constructor(minRead: number, url: string) {
-    this.minRead = Math.max(minRead || 0, 12 * 1024);
-    this.fetchStreams(url)
-  }
-
-  private async fetchStreams(url: string) {
-    let buffer: any[] = [];
-    const response = await fetch(url);
-    this.streams = response.body.getReader();
-    const read = async () => {
-      const response = await this.streams.read();
-      buffer = buffer.concat(Array.from(response.value || []));
-      if (buffer.length >= this.minRead || response.done) {
-        this.receiveCallback && this.receiveCallback(new Uint8Array(buffer), response.done);
-        buffer.length = 0;
-      }
-      if (!response.done) {
-        read();
-      }
+  async read(streams: ReadableStreamDefaultReader<Uint8Array>) {
+    const response = await streams.read();
+    this.buffer = this.buffer.concat(Array.from(response.value || []));
+    if (this.buffer.length >= this.minRead || response.done) {
+      this.doReceive(new Uint8Array(this.buffer), response.done);
+      this.buffer.length = 0;
     }
-    read();
+    if (!response.done) {
+      this.read(streams);
+    }
   }
 
-  onReceive(handler: ProtocolReceiveCallback) {
-    this.receiveCallback = handler;
+  async doReadInternal() {
+    const response = await fetch(this.url);
+    const streams = response.body.getReader();
+    return this.read(streams);
   }
 }

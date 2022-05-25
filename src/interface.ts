@@ -168,13 +168,3 @@ export interface OpenAudioDecodeResponse extends AssemblyResponse {
 }
 
 export declare type ProtocolReceiveCallback = (buffer: Uint8Array, done: boolean) => void
-
-export interface FFMpegProtocol {
-
-  /**
-   * 当接受到数据
-   * @param handler 
-   */
-  onReceive(handler: ProtocolReceiveCallback): void
-
-}
