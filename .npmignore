@@ -1,3 +1,6 @@
 *.sh
-ffmpeg-wrapper
+ffwrapper
 example
+.vscode
+.gitignore
+yarn.lock
