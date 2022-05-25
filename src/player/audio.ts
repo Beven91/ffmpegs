@@ -111,9 +111,9 @@ export default class FFMpegAudioContext {
   private segments: FFMpegAudioBufferSource[]
 
   /**
-   * 截止目前当前音频总时长
+   * 截止目前当前音频累计时长
    */
-  private bufferDuration: number
+  public bufferDuration: number
 
   /**
    * 目前音频的总时长
@@ -185,6 +185,9 @@ export default class FFMpegAudioContext {
    * 设置当前播放开始时间
    */
   public set currentTime(value: number) {
+    if (this.options.mode !== 'audio') {
+      throw new Error('currentTime can be set in audio mode');
+    }
     value = value || 0;
     const source = this.cachedAudioBuffers.find((source) => value <= source.endTime);
     const index = this.cachedAudioBuffers.indexOf(source);
@@ -219,7 +222,7 @@ export default class FFMpegAudioContext {
     this.segments = [];
     this.audioBufferQueues = [];
     this.cachedAudioBuffers = [];
-    this.options = { ...(options || {}) } as FFMpegAudioContextOptions;
+    this.options = { mode: 'audio', ...(options || {}) } as FFMpegAudioContextOptions;
     this.options.minRead = Math.max(this.options.minRead || 0, 12 * 1024);
     this.avcodec = new AVCodecWebAssembly();
     this.audioContext = new AudioContext({});
@@ -322,16 +325,18 @@ export default class FFMpegAudioContext {
       const audioBuffer = context.createBuffer(response.channels, channelsBuffers[0].byteLength / sampleSize, sampleRate);
       channelsBuffers.forEach((ch, c) => audioBuffer.copyToChannel(ch, c));
       const endTime = this.bufferDuration + audioBuffer.duration;
-      this.cachedAudioBuffers.push({
-        sampleRate,
-        sampleSize,
-        blob,
-        done,
-        channels: response.channels,
-        byteLength: channelsBuffers[0].byteLength,
-        startTime: this.bufferDuration,
-        endTime,
-      });
+      if (this.options.mode == 'audio') {
+        this.cachedAudioBuffers.push({
+          sampleRate,
+          sampleSize,
+          blob,
+          done,
+          channels: response.channels,
+          byteLength: channelsBuffers[0].byteLength,
+          startTime: this.bufferDuration,
+          endTime,
+        });
+      }
       this.bufferDuration = endTime;
       if (source.done) {
         // 如果结束了，关闭编码器
