@@ -4,7 +4,7 @@ var type = 'audio';
 var runtimeAudio = {};
 var audioContext = new AudioContext();
 var ffmpegPlayer = null;
-var ffmepgPlayer2 = null;
+var ffmpegPlayer2 = null;
 var ffmpeg = new FFmpegJs(type, { debug: true });
 // 设置默认assembly
 FFmpegJs.defaultAssembly = type;
@@ -34,7 +34,7 @@ function decodeAudioFile(files) {
 }
 
 function decodeAudio2() {
-  ffmepgPlayer2.play();
+  ffmpegPlayer2.play();
 }
 
 function decodeAudio() {
@@ -46,21 +46,21 @@ function decodeAudio() {
   ffmpegPlayer.addEventListener('ended', () => console.log('play audio ended'));
   ffmpegPlayer.addEventListener('close', () => console.log('audio closed'));
   ffmpegPlayer.play();
-  if (ffmepgPlayer2 == null) {
-    ffmepgPlayer2 = ffmpegPlayer;
+  if (ffmpegPlayer2 == null) {
+    ffmpegPlayer2 = ffmpegPlayer;
   }
 }
 
 function stopAudio(isPlay2) {
   if (isPlay2) {
-    return ffmepgPlayer2 && ffmepgPlayer2.pause();
+    return ffmpegPlayer2 && ffmpegPlayer2.pause();
   }
   ffmpegPlayer && ffmpegPlayer.pause();
 }
 
 function continueAudio(isPlay2) {
   if (isPlay2) {
-    return ffmepgPlayer2 && ffmepgPlayer2.play();
+    return ffmpegPlayer2 && ffmpegPlayer2.play();
   }
   ffmpegPlayer && ffmpegPlayer.play();
 }

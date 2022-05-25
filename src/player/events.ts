@@ -22,9 +22,10 @@ export default class AVEvents<T extends string> {
    * @param name 事件名称
    * @param args 参数信息
    */
-  dispatchEvent(name: T, ...args: any[]) {
+  dispatchEvent<R = any>(name: T, ...args: any[]): R[] {
     const handlers = this.containers[name] || [];
-    handlers.forEach((handler) => handler(...args));
+    const results = handlers.map((handler) => handler(...args));
+    return results;
   }
 
   /**

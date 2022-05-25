@@ -1,9 +1,9 @@
 import { FFMpegProtocol } from '../interface';
 import AVCodecWebAssembly from '../index';
 import AVEvents from './events';
-import HttpProtocol from '../protocol/http';
+import loadAvcodecInput from '../protocol';
 
-declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata';
+declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata' | 'create-context' | 'node';
 declare type CancelEvent = () => void
 
 const globalAudioContext = {
@@ -73,7 +73,7 @@ export default class FFMpegAudioContext {
   /**
    * 音频播放器
    */
-  private readonly audioContext: AudioContext
+  private audioContext: AudioContext
 
   /**
    * 播放序列
@@ -151,14 +151,14 @@ export default class FFMpegAudioContext {
   private isPlaying: boolean
 
   /**
-   * 是否在回退播放
+   * 是否定位播放
    */
-  private isRelaying: boolean
+  private seeked: boolean
 
   /**
    * 重新播放的offset
    */
-  private replayOffset: number
+  private seekOffset: number
 
   /**
    * 无效累计播放时长
@@ -194,27 +194,27 @@ export default class FFMpegAudioContext {
     if (source) {
       this.sourceIndex = index;
       this.runKeepping = true;
-      this.isRelaying = true;
+      this.seeked = true;
       this.avcodeTaskCount = 0;
       this.audioBufferQueues.length = 0;
       if (this.state == 'suspended') {
         this.audioContext.resume();
       }
       this.unsedDuration = this.audioContext.currentTime - value;
-      this.replayOffset = source.endTime - value;
+      this.seekOffset = source.endTime - value;
       this.currentSourceNode.buffer = null;
       this.currentSourceNode?.stop();
       this.currentSourceNode?.disconnect();
       this.audioBufferQueues.length = 0;
       this.isPlaying = false;
-      this.runReplayAudioTask();
+      this.seekAudioTask();
     }
   }
 
   constructor(url: string, options?: FFMpegAudioContextOptions) {
     this.url = url;
     this.bufferDuration = 0;
-    this.replayOffset = 0;
+    this.seekOffset = 0;
     this.unsedDuration = 0;
     this.avcodeTaskCount = 0;
     this.sourceIndex = 0;
@@ -225,13 +225,11 @@ export default class FFMpegAudioContext {
     this.options = { mode: 'audio', ...(options || {}) } as FFMpegAudioContextOptions;
     this.options.minRead = Math.max(this.options.minRead || 0, 12 * 1024);
     this.avcodec = new AVCodecWebAssembly();
-    this.audioContext = new AudioContext({});
     this.audioBufferQueues.length = 0;
     this.promiseAvcodecTasks = Promise.resolve({});
     this.events = new AVEvents<AudioContextEvent>();
-    this.audioContext.suspend();
     if (this.options.preload) {
-      this.fetchAudioStreams(true);
+      this.fetchAudio(true);
     }
   }
 
@@ -239,9 +237,9 @@ export default class FFMpegAudioContext {
    * 请求音频url信息
    * @returns 
    */
-  private async fetchAudioStreams(isPreload?: boolean) {
+  private async fetchAudio(isPreload?: boolean) {
     if (!this.streams) {
-      this.streams = new HttpProtocol(this.options.minRead, this.url);
+      this.streams = loadAvcodecInput(this.url, this.options.minRead);
       this.streams.onReceive((buffer, done) => {
         if (buffer.length > 0) {
           this.segments.push({ done, buffer });
@@ -344,7 +342,7 @@ export default class FFMpegAudioContext {
         this.duration = this.bufferDuration;
         this.events.dispatchEvent('loadedmetadata', this);
       }
-      if (!this.isRelaying) {
+      if (!this.seeked) {
         this.pushPlayAudioTask(audioBuffer, done);
       }
     }
@@ -359,7 +357,7 @@ export default class FFMpegAudioContext {
     return new Promise((resolve) => {
       this.audioBufferQueues.push({ done, buffer: audioBuffer, callback: resolve });
       if (!this.isPlaying) {
-        this.runPlayAudioTask();
+        this.playAudioTask();
       }
     })
   }
@@ -369,7 +367,7 @@ export default class FFMpegAudioContext {
    * @param buffer 
    * @returns 
    */
-  private async runReplayAudioTask() {
+  private async seekAudioTask() {
     const sourceNode = this.cachedAudioBuffers[this.sourceIndex];
     if (sourceNode) {
       const context = this.audioContext;
@@ -382,7 +380,7 @@ export default class FFMpegAudioContext {
         audioBuffer.copyToChannel(channelBuffer, i)
       }
       await this.pushPlayAudioTask(audioBuffer, sourceNode.done);
-      this.runReplayAudioTask();
+      this.seekAudioTask();
     }
   }
 
@@ -390,7 +388,7 @@ export default class FFMpegAudioContext {
    * 播放音频buffer
    * @param buffer 
    */
-  private runPlayAudioTask() {
+  private playAudioTask() {
     if (globalAudioContext.current != this) return;
     this.isPlaying = true;
     const queue = this.audioBufferQueues.shift();
@@ -408,7 +406,7 @@ export default class FFMpegAudioContext {
           return;
         }
         queue.callback && queue.callback();
-        this.runPlayAudioTask();
+        this.playAudioTask();
         this.sourceIndex++;
         this.avcodeTaskCount = Math.max(0, this.avcodeTaskCount - 1);
         if (queue.done) {
@@ -420,11 +418,23 @@ export default class FFMpegAudioContext {
       if (this.state !== 'running') {
         this.audioContext.resume();
       }
-      source.start(0, this.replayOffset);
-      this.replayOffset = 0;
+      this.events.dispatchEvent('node', this.audioContext, source);
+      source.start(0, this.seekOffset);
+      this.seekOffset = 0;
     } else {
       this.isPlaying = false;
     }
+  }
+
+  /**
+   * 创建AudioContext
+   */
+  private createAudioContext() {
+    if (this.audioContext == null) {
+      const results = this.events.dispatchEvent<AudioContext>('create-context', this);
+      this.audioContext = results[0] || new AudioContext();
+    }
+    return this.audioContext;
   }
 
   /**
@@ -433,7 +443,8 @@ export default class FFMpegAudioContext {
   play() {
     globalAudioContext.current?.pause();
     this.runKeepping = true;
-    this.fetchAudioStreams();
+    this.createAudioContext();
+    this.fetchAudio();
     if (this.cachedAudioBuffers.length > 0) {
       this.audioContext.resume();
     }
@@ -460,9 +471,25 @@ export default class FFMpegAudioContext {
   }
 
   /**
+   * 通过自定义方式创建播放`AudioContext`
+   * 可以用来实现一些播放增强设置
+   */
+  addEventListener(name: 'create-context', handler: (audio: FFMpegAudioContext) => AudioContext): CancelEvent
+
+  /**
+   * 当前播放器在播放解码数据前触发当前事件，
+   * 可以通过当前事件获取到即将播放的`AudioBufferSourceNode`
+   * @param name 
+   * @param handler 
+   */
+  addEventListener(name: 'node', handler: (source: AudioBufferSourceNode, audioContext: AudioContext) => void): CancelEvent
+
+  addEventListener(name: AudioContextEvent, handler: (audio: FFMpegAudioContext) => void): CancelEvent
+
+  /**
    * 添加事件监听
    */
-  addEventListener(name: AudioContextEvent, handler: () => void): CancelEvent {
+  addEventListener(name: AudioContextEvent, handler: (...params: any[]) => void): CancelEvent {
     this.events.addEventListener(name, handler);
     return () => {
       this.events.removeEventListener(name, handler);
