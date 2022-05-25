@@ -3,7 +3,7 @@ import AVCodecWebAssembly from '../avcodec';
 import AVEvents from './events';
 import HttpProtocol from '../protocol/http';
 
-declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error';
+declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata';
 declare type CancelEvent = () => void
 
 const globalAudioContext = {
@@ -113,7 +113,12 @@ export default class FFMpegAudioContext {
   /**
    * 截止目前当前音频总时长
    */
-  private duration: number
+  private bufferDuration: number
+
+  /**
+   * 目前音频的总时长
+   */
+  public duration: number
 
   /**
    * 时间更新计时器id
@@ -205,7 +210,7 @@ export default class FFMpegAudioContext {
 
   constructor(url: string, options?: FFMpegAudioContextOptions) {
     this.url = url;
-    this.duration = 0;
+    this.bufferDuration = 0;
     this.replayOffset = 0;
     this.unsedDuration = 0;
     this.avcodeTaskCount = 0;
@@ -316,7 +321,7 @@ export default class FFMpegAudioContext {
       const blob = new Blob(channelsBuffers, { type: 'application/octet-stream' });
       const audioBuffer = context.createBuffer(response.channels, channelsBuffers[0].byteLength / sampleSize, sampleRate);
       channelsBuffers.forEach((ch, c) => audioBuffer.copyToChannel(ch, c));
-      const endTime = this.duration + audioBuffer.duration;
+      const endTime = this.bufferDuration + audioBuffer.duration;
       this.cachedAudioBuffers.push({
         sampleRate,
         sampleSize,
@@ -324,13 +329,15 @@ export default class FFMpegAudioContext {
         done,
         channels: response.channels,
         byteLength: channelsBuffers[0].byteLength,
-        startTime: this.duration,
+        startTime: this.bufferDuration,
         endTime,
       });
-      this.duration = endTime;
+      this.bufferDuration = endTime;
       if (source.done) {
         // 如果结束了，关闭编码器
         this.avcodec.closeAudioDecode();
+        this.duration = this.bufferDuration;
+        this.events.dispatchEvent('loadedmetadata', this);
       }
       if (!this.isRelaying) {
         this.pushPlayAudioTask(audioBuffer, done);
