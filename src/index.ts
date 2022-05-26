@@ -7,13 +7,14 @@ export default class AVCodecWebAssembly extends WebAssemblyWorker {
   public static Audio = Audio
 
   public static AvariableWebAssembies = {
-    'audio-pure': '/audio-pure.wasm',
-    'audio': '/audio.wasm'
+    'opus-pure': '/opus-pure.wasm',
+    'opus': '/opus.wasm',
+    'daudio': '/daudio.wasm'
   }
 
   public static defaultAssembly: keyof typeof AVCodecWebAssembly.AvariableWebAssembies
 
-  constructor(type?: keyof typeof AVCodecWebAssembly.AvariableWebAssembies, options?: { debug: boolean }) {
+  constructor(type?: keyof typeof AVCodecWebAssembly.AvariableWebAssembies, options?: { debug?: boolean }) {
     type = type || AVCodecWebAssembly.defaultAssembly;
     super(type, AVCodecWebAssembly.AvariableWebAssembies[type], (options || {}).debug);
   }

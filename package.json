@@ -11,9 +11,11 @@
     "wasm"
   ],
   "scripts": {
+    "prepublish": "npm run build",
     "start": "cd example && ts-node ./www",
-    "build": "tsc",
-    "dev": "watchify --entry src/index.ts --outfile dist/umd/ffmpeg-js.js -p [ tsify --noImplicitAny ]",
+    "build": "tsc && node apply.js && npm run umd",
+    "umd":"browserify --entry dist/src/index.js --noparse=$PWD/dist/assembly/audio.js  --no-bundle-external --ignore-missing  --outfile dist/umd/ffmpegjs.js",
+    "dev": "watchify --no-bundle-external --entry src/index.ts --outfile dist/umd/ffmpegjs.js -p [ tsify --noImplicitAny ]",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {

@@ -3,6 +3,8 @@ import AVCodecWebAssembly from '../index';
 import AVEvents from './events';
 import loadAvcodecInput from '../protocol';
 
+
+
 declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata' | 'create-context' | 'node';
 declare type CancelEvent = () => void
 
@@ -12,6 +14,13 @@ const globalAudioContext = {
 }
 
 export interface FFMpegAudioContextOptions {
+  /**
+   * 当前wasm场景类型
+   */
+  type?: keyof typeof AVCodecWebAssembly.AvariableWebAssembies
+
+  debug?: boolean
+
   /**
    * 在读取音频url返回数据时，最小数据块大小
    */
@@ -224,7 +233,7 @@ export default class FFMpegAudioContext {
     this.cachedAudioBuffers = [];
     this.options = { mode: 'audio', ...(options || {}) } as FFMpegAudioContextOptions;
     this.options.minRead = Math.max(this.options.minRead || 0, 12 * 1024);
-    this.avcodec = new AVCodecWebAssembly();
+    this.avcodec = new AVCodecWebAssembly(this.options.type, this.options);
     this.audioBufferQueues.length = 0;
     this.promiseAvcodecTasks = Promise.resolve({});
     this.events = new AVEvents<AudioContextEvent>();
@@ -247,7 +256,9 @@ export default class FFMpegAudioContext {
       this.streams.onReceive((buffer, done) => {
         if (buffer.length > 0) {
           this.segments.push({ done, buffer });
-        } else if (done && this.segments.length > 0) {
+        } else if (done && this.segments.length == 1) {
+          this.segments.push({ buffer: new Uint8Array(), done: true });
+        } else if (done && this.segments.length > 1) {
           this.segments[this.segments.length - 1].done = true;
         }
       });
@@ -290,9 +301,9 @@ export default class FFMpegAudioContext {
     this.isOpenAvcodec = true;
     const buffer = source.buffer;
     this.promiseAvcodecTasks = this.promiseAvcodecTasks.then(() => {
-      return header ? this.openAudioDecode(buffer) : this.processAudioDecode(source);
-    }).catch((ex) => {
-      this.events.dispatchEvent('error', ex);
+      return header ? this.openAudioDecode(buffer) : this.processAudioDecode(source).catch((ex) => {
+        this.events.dispatchEvent('error', ex);
+      })
     });
   }
 
@@ -307,7 +318,7 @@ export default class FFMpegAudioContext {
     } catch (ex) {
       this.events.dispatchEvent('error', ex);
       this.close();
-      return Promise.reject({});
+      return Promise.reject(ex);
     }
   }
 
@@ -471,6 +482,7 @@ export default class FFMpegAudioContext {
   close() {
     this.runKeepping = false;
     clearInterval(this.taskIntervalId);
+    this.avcodec.closeAudioDecode();
     this.audioContext.close();
     this.events.dispatchEvent('closed', this);
   }

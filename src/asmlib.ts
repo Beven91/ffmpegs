@@ -1,4 +1,4 @@
-import createAssemlby from '../assembly/audio';
+import createAssemlby from './asmlib.template';
 
 export function log(debug: boolean, name: string, ...params: any[]) {
   if (debug == true) {
@@ -57,4 +57,4 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var log = ${log.toString()};
 `
 
-export const createFFmepgAssembly = `;var _scriptDir = '';var createFFmepgModule =(${createAssemlby.toString()});`;
+export const createFFmepgAssembly = `;var _scriptDir = '';var createFFmepgModule =(${createAssemlby});`;

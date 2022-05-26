@@ -1,5 +1,5 @@
 
-var type = 'audio';
+var type = 'daudio';
 // var type = 'audio-pure';
 var runtimeAudio = {};
 var audioContext = new AudioContext();
@@ -34,7 +34,7 @@ function decodeAudioFile(files) {
 }
 
 function decodeAudioFilePlay(files) {
-  const player = new FFmpegJs.Audio(files[0]);
+  const player = new FFmpegJs.Audio(files[0],{ debug:true });
   player.play();
 }
 
@@ -43,7 +43,7 @@ function decodeAudio2() {
 }
 
 function decodeAudio() {
-  var url = type == 'audio' ? '/demo.opus' : 'aa.opus';
+  var url = type == 'opus-pure' ? '/pure.opus' : 'normal.opus';
   ffmpegPlayer = new FFmpegJs.Audio(url);
   ffmpegPlayer.addEventListener('play', () => console.log('play audio'));
   ffmpegPlayer.addEventListener('pause', () => console.log('pause audio'));
