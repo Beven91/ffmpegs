@@ -29,8 +29,8 @@ export default class AVCodecWebAssembly extends WebAssemblyWorker {
   /**
    * 解码音频数据，注意调用此函数前，要先调用`openAudioDecode`
    */
-  decodeAudio(buffer: Uint8Array): Promise<AVDecoderResponse> {
-    return this.invoke({ action: 'audio_decode', data: buffer }) as Promise<AVDecoderResponse>;
+  decodeAudio(data: AVDecoderRequest): Promise<AVDecoderResponse> {
+    return this.invoke({ action: 'audio_decode', data: data }) as Promise<AVDecoderResponse>;
   }
 
   /**

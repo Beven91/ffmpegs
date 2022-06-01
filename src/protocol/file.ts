@@ -7,11 +7,15 @@ export default class FileProtocol extends FFMpegProtocol<File> {
       const reader = new FileReader();
       reader.onerror = reject;
       reader.onload = () => {
+        let index = 0;
         const buffer = reader.result as ArrayBuffer;
-        const header = buffer.slice(0, this.minRead);
-        const body = buffer.slice(this.minRead);
-        this.doReceive(new Uint8Array(header), false);
-        this.doReceive(new Uint8Array(body), true);
+        const length = buffer.byteLength;
+        while (index < length) {
+          const data = buffer.slice(index, index + this.minRead);
+          this.doReceive(new Uint8Array(data), false);
+          index = index + this.minRead;
+        }
+        this.doReceive(new Uint8Array(), true);
         resolve({});
       }
       reader.readAsArrayBuffer(this.url);

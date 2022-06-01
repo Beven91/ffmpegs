@@ -314,7 +314,7 @@ export default class FFMpegAudioContext {
    */
   private async openAudioDecode(buffer: Uint8Array) {
     try {
-      return await this.avcodec.openAudioDecode({ buffer });
+      return await this.avcodec.openAudioDecode({ buffer, done: false });
     } catch (ex) {
       this.events.dispatchEvent('error', ex);
       this.close();
@@ -329,7 +329,7 @@ export default class FFMpegAudioContext {
   private async processAudioDecode(source: FFMpegAudioBufferSource) {
     if (!source) return Promise.resolve({});
     const done = source.done;
-    const response = await this.avcodec.decodeAudio(source.buffer);
+    const response = await this.avcodec.decodeAudio({ buffer: source.buffer, done: source.done });
     const channelsBuffers = response.channelsBuffer || [];
     const context = this.audioContext;
     const { sampleRate, sampleSize } = response;

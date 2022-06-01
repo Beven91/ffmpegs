@@ -218,11 +218,13 @@ export default function GetFFMpegAssemblyAdapter() {
     /**
      * 解码传入数据
      */
-    async audioDecode(request: WorkderRequest<Uint8Array>): Promise<AVDecoderResponse> {
+    async audioDecode(request: WorkderRequest<AVDecoderRequest>): Promise<AVDecoderResponse> {
       const name = `audio_decode_${Date.now()}.pcm`;
-      await this.writeFile(name, request.data);
+      const buffer = request.data.buffer;
+      await this.writeFile(name, buffer);
       const id = this.instanceId;
-      const content = this.assemblyWrapInstance.cwrap('audio_decode', 'string', ['int', 'string'])(id, name);
+      const end = request.data.done == true ? 1 : 0;
+      const content = this.assemblyWrapInstance.cwrap('audio_decode', 'string', ['int', 'string', 'int'])(id, name, end);
       const response = this.deserialize<AVDecoderResponse>(content);
       const prefix = response.prefix;
       response.channelsBuffer = [];

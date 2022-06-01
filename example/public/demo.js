@@ -34,7 +34,7 @@ function decodeAudioFile(files) {
 }
 
 function decodeAudioFilePlay(files) {
-  const player = new FFmpegJs.Audio(files[0],{ debug:true });
+  const player = new FFmpegJs.Audio(files[0], { debug: true,minRead:12 * 1024 });
   player.play();
 }
 
@@ -44,7 +44,7 @@ function decodeAudio2() {
 
 function decodeAudio() {
   var url = type == 'opus-pure' ? '/pure.opus' : 'normal.opus';
-  ffmpegPlayer = new FFmpegJs.Audio(url);
+  ffmpegPlayer = new FFmpegJs.Audio(url,{ debug:true });
   ffmpegPlayer.addEventListener('play', () => console.log('play audio'));
   ffmpegPlayer.addEventListener('pause', () => console.log('pause audio'));
   ffmpegPlayer.addEventListener('playing', (ctx) => console.log('playing:' + ctx.currentTime));

@@ -51,6 +51,11 @@ export interface AVDecoderRequest {
    * 音频文件头部数据流，建议获取超过1024个字节
    */
   buffer: Uint8Array
+
+  /**
+   * 是否为最后一个片段
+   */
+  done:boolean
 }
 
 /**
