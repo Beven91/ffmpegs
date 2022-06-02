@@ -272,7 +272,7 @@ export default class FFMpegAudioContext {
    * 执行音频播放任务
    */
   private async processAudioTask() {
-    if (this.state == 'running' && this.currentTime > 0) {
+    if (this.state == 'running') {
       this.events.dispatchEvent('playing', this);
     }
     if (!this.runKeepping) {
@@ -403,7 +403,7 @@ export default class FFMpegAudioContext {
    * 播放音频buffer
    * @param buffer 
    */
-  private playAudioTask() {
+  private async playAudioTask() {
     if (globalAudioContext.current != this) return;
     this.isPlaying = true;
     const queue = this.audioBufferQueues.shift();
@@ -431,7 +431,7 @@ export default class FFMpegAudioContext {
         }
       });
       if (this.state !== 'running') {
-        this.audioContext.resume();
+        await this.audioContext.resume();
       }
       this.events.dispatchEvent('node', this.audioContext, source);
       source.start(0, this.seekOffset);
@@ -462,6 +462,9 @@ export default class FFMpegAudioContext {
     this.createAudioContext();
     this.fetchAudio();
     this.audioContext.resume();
+    if (this.cachedAudioBuffers.length > 0) {
+      this.audioContext.resume();
+    }
     globalAudioContext.current = this;
     this.events.dispatchEvent('play', this);
   }
