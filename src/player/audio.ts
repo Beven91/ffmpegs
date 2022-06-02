@@ -187,8 +187,11 @@ export default class FFMpegAudioContext {
   public get currentTime() {
     if (!this.audioContext) {
       return -1;
+    } else if (this.audioContext.currentTime > this.duration) {
+      return this.duration;
+    } else {
+      return this.audioContext.currentTime - this.unsedDuration;
     }
-    return this.audioContext.currentTime - this.unsedDuration;
   }
 
   /**
@@ -224,6 +227,7 @@ export default class FFMpegAudioContext {
     this.duration = 0;
     this.sourceIndex = 0;
     this.isOpenAvcodec = false;
+    this.runKeepping = false;
     this.segments = [];
     this.audioBufferQueues = [];
     this.cachedAudioBuffers = [];
@@ -435,8 +439,9 @@ export default class FFMpegAudioContext {
         this.avcodeTaskCount = Math.max(0, this.avcodeTaskCount - 1);
         if (queue.done) {
           this.runKeepping = false;
+          this.events.dispatchEvent('playing', this);
           this.audioContext.suspend();
-          this.events.dispatchEvent('ended');
+          this.events.dispatchEvent('ended', this);
         }
       });
       if (this.state !== 'running') {
@@ -466,7 +471,7 @@ export default class FFMpegAudioContext {
    * 开始播放
    */
   play() {
-    if (this.currentTime < this.duration) {
+    if (this.currentTime < this.duration && this.runKeepping == false) {
       globalAudioContext.current?.pause();
       this.runKeepping = true;
       this.createAudioContext();
