@@ -272,7 +272,7 @@ export default class FFMpegAudioContext {
    * 执行音频播放任务
    */
   private async processAudioTask() {
-    if (this.state == 'running') {
+    if (this.state == 'running' && this.currentTime > 0) {
       this.events.dispatchEvent('playing', this);
     }
     if (!this.runKeepping) {
@@ -334,7 +334,9 @@ export default class FFMpegAudioContext {
     if (channelsBuffers[0]?.byteLength > 0) {
       const blob = new Blob(channelsBuffers, { type: 'application/octet-stream' });
       const audioBuffer = context.createBuffer(response.channels, channelsBuffers[0].byteLength / sampleSize, sampleRate);
-      channelsBuffers.forEach((ch, c) => audioBuffer.copyToChannel(ch, c));
+      channelsBuffers.forEach((ch, c) => {
+        audioBuffer.getChannelData(c).set(ch, 0);
+      });
       const endTime = this.bufferDuration + audioBuffer.duration;
       if (this.options.mode == 'audio') {
         this.cachedAudioBuffers.push({
@@ -459,9 +461,7 @@ export default class FFMpegAudioContext {
     this.runKeepping = true;
     this.createAudioContext();
     this.fetchAudio();
-    if (this.cachedAudioBuffers.length > 0) {
-      this.audioContext.resume();
-    }
+    this.audioContext.resume();
     globalAudioContext.current = this;
     this.events.dispatchEvent('play', this);
   }
