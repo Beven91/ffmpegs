@@ -13,7 +13,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "start": "cd example && ts-node ./www",
-    "build": "tsc && node apply.js && npm run umd",
+    "build": "tsc && tsc --allowJs assembly/audio.js --out dist/audio.js --noEmitOnError && node apply.js && npm run umd",
     "umd":"browserify --entry dist/src/index.js --noparse=$PWD/dist/assembly/audio.js  --no-bundle-external --ignore-missing  --outfile dist/umd/ffmpegjs.js",
     "dev": "watchify --no-bundle-external --entry src/index.ts --outfile dist/umd/ffmpegjs.js -p [ tsify --noImplicitAny ]",
     "test": "echo \"Error: no test specified\" && exit 1"
