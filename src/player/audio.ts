@@ -185,6 +185,9 @@ export default class FFMpegAudioContext {
    * @param options 
    */
   public get currentTime() {
+    if (!this.audioContext) {
+      return -1;
+    }
     return this.audioContext.currentTime - this.unsedDuration;
   }
 
@@ -204,14 +207,8 @@ export default class FFMpegAudioContext {
       this.seeked = true;
       this.avcodeTaskCount = 0;
       this.audioBufferQueues.length = 0;
-      if (this.state == 'suspended') {
-        this.audioContext.resume();
-      }
       this.unsedDuration = this.audioContext.currentTime - value;
-      this.seekOffset = source.endTime - value;
-      this.currentSourceNode.buffer = null;
-      this.currentSourceNode?.stop();
-      this.currentSourceNode?.disconnect();
+      this.seekOffset = value - source.startTime;
       this.audioBufferQueues.length = 0;
       this.isPlaying = false;
       this.seekAudioTask();
@@ -224,6 +221,7 @@ export default class FFMpegAudioContext {
     this.seekOffset = 0;
     this.unsedDuration = 0;
     this.avcodeTaskCount = 0;
+    this.duration = 0;
     this.sourceIndex = 0;
     this.isOpenAvcodec = false;
     this.segments = [];
@@ -392,10 +390,22 @@ export default class FFMpegAudioContext {
       const audioBuffer = context.createBuffer(channels, byteLength / sampleSize, sampleRate);
       for (let i = 0; i < channels; i++) {
         const channelBuffer = new Float32Array(buffer.slice(i * byteLength, i * byteLength + byteLength));
-        audioBuffer.copyToChannel(channelBuffer, i)
+        audioBuffer.getChannelData(i).set(channelBuffer, 0);
       }
       await this.pushPlayAudioTask(audioBuffer, sourceNode.done);
       this.seekAudioTask();
+    }
+  }
+
+  /**
+   * 停止当前正在播放的节点
+   */
+  private async releasePlayingSourceNode() {
+    try {
+      this.currentSourceNode.buffer = null;
+      this.currentSourceNode?.stop();
+      this.currentSourceNode?.disconnect();
+    } catch (ex) {
     }
   }
 
@@ -408,8 +418,7 @@ export default class FFMpegAudioContext {
     this.isPlaying = true;
     const queue = this.audioBufferQueues.shift();
     if (queue) {
-      this.currentSourceNode?.stop();
-      this.currentSourceNode?.disconnect();
+      this.releasePlayingSourceNode();
       const context = this.audioContext;
       const source = context.createBufferSource();
       this.currentSourceNode = source;
@@ -457,16 +466,18 @@ export default class FFMpegAudioContext {
    * 开始播放
    */
   play() {
-    globalAudioContext.current?.pause();
-    this.runKeepping = true;
-    this.createAudioContext();
-    this.fetchAudio();
-    this.audioContext.resume();
-    if (this.cachedAudioBuffers.length > 0) {
+    if (this.currentTime < this.duration) {
+      globalAudioContext.current?.pause();
+      this.runKeepping = true;
+      this.createAudioContext();
+      this.fetchAudio();
       this.audioContext.resume();
+      if (this.cachedAudioBuffers.length > 0) {
+        this.audioContext.resume();
+      }
+      globalAudioContext.current = this;
+      this.events.dispatchEvent('play', this);
     }
-    globalAudioContext.current = this;
-    this.events.dispatchEvent('play', this);
   }
 
   /**
