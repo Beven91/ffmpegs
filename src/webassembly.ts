@@ -13,6 +13,7 @@ function WebAssemblyWorkerJs() {
   // workder.js 代码内容
   const thisWorker = self as AssemblyWorkerSelf;
   const log = thisWorker.log;
+  const origin = thisWorker.locationOrigin;
   const createFFmepgModule = (self as any).createFFmepgModule;
   const fetchedWebAssemblies = {} as Record<string, Promise<WebAssembly.WebAssemblyInstantiatedSource>>;
   const assemblyRuntime = { callback: null as Function, importObject: null as Record<string, any> };
@@ -27,6 +28,22 @@ function WebAssemblyWorkerJs() {
   // 初始化assemblyInstance
   createFFmepgModule(assemblyWrapInstance);
 
+  if (!WebAssembly.instantiateStreaming) {
+    (WebAssembly as any).instantiateStreaming = (promise: Promise<Response>, importObject: WebAssembly.Imports) => {
+      return new Promise<WebAssembly.WebAssemblyInstantiatedSource>(async (resolve, reject) => {
+        try {
+          const response = await Promise.resolve(promise);
+          const buffer = await response.arrayBuffer();
+          const wasmModule = await WebAssembly.compile(buffer);
+          const instance = await WebAssembly.instantiate(wasmModule, importObject);
+          resolve({ instance, module: wasmModule });
+        } catch (ex) {
+          reject(ex);
+        }
+      })
+    }
+  }
+
   /**
    * 加载指定webassembly
    * @param name webassembly名称
@@ -36,7 +53,7 @@ function WebAssemblyWorkerJs() {
   function fetchWebAssembly(name: string, uri: string): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
     const id = name.toLowerCase();
     if (!fetchedWebAssemblies[id]) {
-      const url = /^(http|https)/.test(uri as string) ? uri as string : location.origin + uri;
+      const url = /^(http|https)/.test(uri as string) ? uri as string : origin + uri;
       const options = { credentials: "same-origin" } as RequestInit;
       const io = assemblyRuntime.importObject;
       fetchedWebAssemblies[id] = WebAssembly.instantiateStreaming(fetch(url, options), io);
@@ -58,7 +75,7 @@ function WebAssemblyWorkerJs() {
     const request = ev.data;
     log(request.debug, `>> ${request.action}`, request);
     const assembly = await fetchWebAssembly(request.name, request.data);
-    const adapter = new thisWorker.FFMpegAssemblyAdapter(assembly.instance.exports, assemblyWrapInstance,request.idKey, request.debug);
+    const adapter = new thisWorker.FFMpegAssemblyAdapter(assembly.instance.exports, assemblyWrapInstance, request.idKey, request.debug);
     if (assemblyRuntime.callback) {
       assemblyRuntime.callback(assembly.instance);
       assemblyRuntime.callback = null;
@@ -66,6 +83,7 @@ function WebAssemblyWorkerJs() {
     switch (request.action) {
       case 'init':
         invokeCallback(request, { ret: 0, message: 'ok' });
+        log(request.debug, `<< ${request.action} successfully`);
         break;
       default:
         try {
@@ -74,7 +92,7 @@ function WebAssemblyWorkerJs() {
           log(request.debug, `<< ${request.action}`, response);
           invokeCallback(request, response);
         } catch (ex) {
-          console.error(ex.message + '\n' + ex.stack);
+          postMessage({ type: 'error', data: ex.message + '\n' + ex.stack });
           adapter.release();
           invokeCallback(request, { message: ex.message, ret: -1 });
         }
@@ -87,6 +105,21 @@ function WebAssemblyWorkerJs() {
  */
 const blob = new Blob([polyfill, createFFmepgAssembly, `(${FFMpegAssemblyAdapter.toString()}());`, WebAssemblyWorkerJs.toString(), ';WebAssemblyWorkerJs();']);
 const assemblyWorker = new Worker(window.URL.createObjectURL(blob));
+assemblyWorker.addEventListener('messageerror', (e) => {
+  console.error(e);
+})
+assemblyWorker.addEventListener('message', (response: MessageEvent<WorkerResponse>) => {
+  const type = response.data?.type;
+  switch (type) {
+    case 'log':
+      const meta = (response.data as any) as { name: string, params: any[] };
+      console.debug(`[ffmpeg-js-worker] ${meta.name}`, ...(meta.params || []));
+      break;
+    case 'error':
+      console.error(response.data?.data);
+      break;
+  }
+})
 assemblyWorker.onerror = function (e) {
   console.error(e);
 }
@@ -120,7 +153,7 @@ export default class WebAssemblyWorker {
     this.name = name;
     this.responseCallbacks = {};
     this.debug = debug;
-    this.idKey =generate.id ++;
+    this.idKey = generate.id++;
     assemblyWorker.addEventListener('message', (response: MessageEvent<WorkerResponse>) => {
       const id = response.data?.id;
       const callback = this.responseCallbacks[id];

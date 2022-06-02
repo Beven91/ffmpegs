@@ -61,13 +61,13 @@ export default function GetFFMpegAssemblyAdapter() {
      * @param buffer  H5的File或者Uint8Array
      * @returns 
      */
-    async writeFile(name: string, buffer: File | Uint8Array) {
-      if (buffer instanceof File) {
+    async writeFile(name: string, buffer: Blob | Uint8Array) {
+      if (buffer instanceof Blob) {
         buffer = await new Promise<Uint8Array>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
           reader.onerror = reject;
-          reader.readAsArrayBuffer(buffer as File);
+          reader.readAsArrayBuffer(buffer as Blob);
         })
       }
       this.fs.writeFile(name, buffer);

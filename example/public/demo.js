@@ -1,4 +1,5 @@
 
+var AudioContext = window.AudioContext || window.webkitAudioContext;
 var type = 'daudio';
 // var type = 'audio-pure';
 var runtimeAudio = {};

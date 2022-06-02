@@ -55,7 +55,7 @@ export interface AVDecoderRequest {
   /**
    * 是否为最后一个片段
    */
-  done:boolean
+  done: boolean
 }
 
 /**
@@ -131,7 +131,7 @@ export interface AVEncoderResponse extends AssemblyResponse {
 
 export interface WorkderRequest<T = any> {
   id?: string
-  idKey?:number
+  idKey?: number
   name?: string
   action: 'init' | AssemblyExportKeys
   debug?: boolean
@@ -139,6 +139,7 @@ export interface WorkderRequest<T = any> {
 }
 
 export interface WorkerResponse<T = AssemblyResponse> {
+  type?: string
   id: string
   data: T
 }
@@ -163,6 +164,7 @@ export interface AssemblyWorkerSelf extends Window {
   FS?: AssemblyFS
   FFMpegAssemblyAdapter?: ReturnType<typeof GetFFMpegAssemblyAdapter>,
   log?: typeof log
+  locationOrigin?: string
 }
 
 export interface OpenAudioDecodeResponse extends AssemblyResponse {

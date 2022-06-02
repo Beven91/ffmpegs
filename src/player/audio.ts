@@ -3,8 +3,6 @@ import AVCodecWebAssembly from '../index';
 import AVEvents from './events';
 import loadAvcodecInput from '../protocol';
 
-
-
 declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata' | 'create-context' | 'node';
 declare type CancelEvent = () => void
 
@@ -446,6 +444,7 @@ export default class FFMpegAudioContext {
    */
   private createAudioContext() {
     if (this.audioContext == null) {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       const results = this.events.dispatchEvent<AudioContext>('create-context', this);
       this.audioContext = results[0] || new AudioContext();
     }

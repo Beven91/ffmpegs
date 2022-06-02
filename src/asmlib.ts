@@ -3,12 +3,17 @@ import createAssemlby from './asmlib.template';
 export function log(debug: boolean, name: string, ...params: any[]) {
   if (debug == true) {
     const isWork = 'WorkerLocation' in self;
-    const type = isWork ? '[ffmpeg-js]' : '[ffmpeg-js-worker]';
-    console.debug(`${type} ${name}`, ...params);
+    const type = isWork ? '[ffmpeg-js-worker]' : '[ffmpeg-js]';
+    if (isWork) {
+      self.postMessage({ type: 'log', name, params: params });
+    } else {
+      console.debug(`${type} ${name}`, ...params);
+    }
   }
 }
 
 export const polyfill = `
+self.locationOrigin = '${location.origin}';
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
   function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
   return new (P || (P = Promise))(function (resolve, reject) {
