@@ -45,7 +45,9 @@ yarn add ffmpeg-js
 
 ## 使用
 
-> initialize
+### FFmpegJs
+
+> 初始化
 
 ```js
 import FFmpegJs from 'ffmpeg-js';
@@ -60,12 +62,143 @@ FFmpegJs.AvariableWebAssembies = {
 const ffmpegjs = new FFmpegJs('opus');
 ```
 
-> decode
+> FFmpegJs 实例
+
+| Method | Description |
+| ---- | ---- |
+| decodeAudioFile | 解码音视文件 |
+| encodeAudioFile | 编码音视文件 |
+| openAudioDecode | 打开音频解码器 |
+| decodeAudio     | `openAudioDecode`后用于解码音频数据 |
+| closeAudioDecode| `openAudioDecode`后用于关闭音频解码器 |
+| openAudioEncode | 打开音视频编码器 |
+| encodeAudio     | `openAudioEncode`后用于编码音频数据 |
+| closeAudioEncode| `openAudioEncode`后用于关闭音频编码器 |
+
+> decodeAudioFile
 
 ```js
+import FFmpegJs from 'ffmpeg-js';
 
+const ffmpegjs = new FFmpegJs('opus');
+
+const file = files[0];
+
+ffmpegjs.decodeAudioFile(file).then((response)=>{
+  // 当前音频编码器名称
+  console.log(response.codecName);
+  console.log(response.codecLongName);
+  // 当前数据编码格式
+  console.log(response.format);
+  // 采样率
+  console.log(response.sampleRate);
+  // 采样位深
+  console.log(response.sampleSize);
+  // 音频通道数字
+  console.log(response.channels);
+  // 当前解码的个通道的音频数Float32Array
+  console.log(response.channelsBuffer)
+});
 
 ```
 
+> encodeAudioFile
 
+```js
+import FFmpegJs from 'ffmpeg-js';
 
+const ffmpegjs = new FFmpegJs('opus');
+
+const pcmfile = files[0];
+
+ffmpegjs.encodeAudioFile(pcmfile).then((response)=>{
+  // 编码后的数据Uint8Array
+  const data = response.data;
+  const blob = new Blob([data], { type: 'application/octet-stream' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'demo.opus';
+  a.click();
+});
+```
+
+> 持续解码
+
+```js
+import FFmpegJs from 'ffmpeg-js';
+
+const ffmpegjs = new FFmpegJs('opus');
+
+async function fetchAudio(){
+  const response = await fetch('./demo.opus');
+  const reader = response.getHeader();
+
+  let partial = await reader.read();
+  // 打开解码器
+  await ffmpegjs.openAudioDecode({ buffer:partial.value });
+
+  while(!partial.done) {
+    partial = await reader.read();
+    const data = { done:partial.done,buffer:partial.value };
+    // 解码数据
+    const result = await ffmpegjs.decodeAudio(data);
+    // 播放....
+    play(result.channels, result.channelsBuffer);
+  }
+
+  // 关闭解码器
+  await ffmpegjs.closeAudioDecode();
+}
+```
+
+> 持续编码
+
+```js
+import FFmpegJs from 'ffmpeg-js';
+
+const ffmpegjs = new FFmpegJs('opus');
+
+const data = {
+  input: {
+    format: 's16',
+    sampleRate: 48000,
+    channels: 2,
+  },
+  output: {
+    name: 'demo.opus',
+    bitRate: 96000
+  }
+}
+
+// 打开编码器
+await ffmpegjs.openAudioEncode(data);
+
+// 编码音频数据
+const buffer:Uint8Array;
+await ffmpegjs.encodeAudio(buffer);
+
+// 关闭编码
+await ffmpegjs.closeAudioEncode();
+
+```
+
+### Audio
+
+另外可以使用内置的`Audio`来进行播放
+
+```js
+import FFmpegJs from 'ffmpeg-js';
+
+// 播放url
+const audio = new FFmpegJs.Audio('http://xxx.com/demo.opus');
+
+// 播放File对象
+const audio2 = new FFmpegJs.Audio(file);
+
+document.querySelector('#play').addEventListener('click',()=>{
+  // 播放
+  audio.play();
+});
+
+```
