@@ -2,7 +2,8 @@
 
 <div align="center">
 一个基于<a href="https://github.com/FFmpeg/FFmpeg">ffmpeg</a>构建在webassembly平台上的轻量级音视频编码与解码工具。
-<div style="margin-top:10px">
+  
+<div style="padding:10px 0px 0px 0px">
   <img src="https://img.shields.io/npm/v/ffmpegs.svg">
 </div>
 </div>
