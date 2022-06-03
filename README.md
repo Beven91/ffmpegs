@@ -2,6 +2,7 @@
 
 <div align="center">
 一个基于<a href="https://github.com/FFmpeg/FFmpeg">ffmpeg</a>构建在webassembly平台上的轻量级音视频编码与解码工具。
+[![NPM version][npm-image]][npm-url]
 </div>
 
 ## 特性
@@ -229,3 +230,7 @@ document.querySelector('#play').addEventListener('click',()=>{
 | loadedmetadata | 当元数据加载完成时触发，此时可以获取到正确的`duration` |
 | create-context | 自定义创建`AudioContext` |
 | node | 当解码数据后切要播放该数据时会创建`AudioBufferSourceNode`节点时触发 |
+
+
+[npm-url]: https://www.npmjs.com/package/ffmpeg-js
+[npm-image]: https://img.shields.io/npm/v/ffmpeg-js.svg
