@@ -187,6 +187,23 @@ await ffmpegjs.closeAudioEncode();
 
 另外可以使用内置的`Audio`来进行播放
 
+
+```js
+import FFmpegJs from 'ffmpeg-js';
+
+// 播放url
+const audio = new FFmpegJs.Audio('http://xxx.com/demo.opus');
+
+// 播放File对象
+const audio2 = new FFmpegJs.Audio(file);
+
+document.querySelector('#play').addEventListener('click',()=>{
+  // 播放
+  audio.play();
+});
+
+```
+
 > 属性和方法
 
 | Method Property | Description |
@@ -212,19 +229,3 @@ await ffmpegjs.closeAudioEncode();
 | loadedmetadata | 当元数据加载完成时触发，此时可以获取到正确的`duration` |
 | create-context | 自定义创建`AudioContext` |
 | node | 当解码数据后切要播放该数据时会创建`AudioBufferSourceNode`节点时触发 |
-
-```js
-import FFmpegJs from 'ffmpeg-js';
-
-// 播放url
-const audio = new FFmpegJs.Audio('http://xxx.com/demo.opus');
-
-// 播放File对象
-const audio2 = new FFmpegJs.Audio(file);
-
-document.querySelector('#play').addEventListener('click',()=>{
-  // 播放
-  audio.play();
-});
-
-```

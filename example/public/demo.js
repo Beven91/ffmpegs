@@ -7,7 +7,6 @@ var audioContext = new AudioContext();
 var ffmpegPlayer = null;
 var ffmpegPlayer2 = null;
 var ffmpeg = new FFmpegJs(type, { debug: true });
-console.log(Object.keys(window));
 // 设置默认assembly
 FFmpegJs.defaultAssembly = type;
 
