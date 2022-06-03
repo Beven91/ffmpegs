@@ -2,8 +2,8 @@
 
 <div align="center">
 一个基于<a href="https://github.com/FFmpeg/FFmpeg">ffmpeg</a>构建在webassembly平台上的轻量级音视频编码与解码工具。
-[![NPM version][npm-image]][npm-url]
 </div>
+[![NPM version][npm-image]][npm-url]
 
 ## 特性
 
