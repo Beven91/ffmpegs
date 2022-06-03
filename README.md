@@ -47,6 +47,19 @@ yarn add ffmpeg-js
 
 ### FFmpegJs
 
+> FFmpegJs 实例
+
+| Method | Description |
+| ---- | ---- |
+| decodeAudioFile | 解码音频文件 |
+| encodeAudioFile | 编码音频文件 |
+| openAudioDecode | 打开音频解码器 |
+| decodeAudio     | `openAudioDecode`后用于解码音频数据 |
+| closeAudioDecode| `openAudioDecode`后用于关闭音频解码器 |
+| openAudioEncode | 打开音频编码器 |
+| encodeAudio     | `openAudioEncode`后用于编码音频数据 |
+| closeAudioEncode| `openAudioEncode`后用于关闭音频编码器 |
+
 > 初始化
 
 ```js
@@ -61,19 +74,6 @@ FFmpegJs.AvariableWebAssembies = {
 // create typed instance
 const ffmpegjs = new FFmpegJs('opus');
 ```
-
-> FFmpegJs 实例
-
-| Method | Description |
-| ---- | ---- |
-| decodeAudioFile | 解码音频文件 |
-| encodeAudioFile | 编码音频文件 |
-| openAudioDecode | 打开音频解码器 |
-| decodeAudio     | `openAudioDecode`后用于解码音频数据 |
-| closeAudioDecode| `openAudioDecode`后用于关闭音频解码器 |
-| openAudioEncode | 打开音频编码器 |
-| encodeAudio     | `openAudioEncode`后用于编码音频数据 |
-| closeAudioEncode| `openAudioEncode`后用于关闭音频编码器 |
 
 > decodeAudioFile
 
