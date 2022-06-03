@@ -8,7 +8,7 @@
 
 - 轻量级,代码体积小。
 - 灵活性高，可根据场景选择对应的`wasm`。
-- 采用`web-workder`来进行编码与解码不影响`主线程`
+- 采用`web-workder`来进行编码与解码不影响主线程
 - 方便易用，采用统一api来完成不同场景的`wasm`的调用。
 
 ## 环境支持
@@ -186,6 +186,32 @@ await ffmpegjs.closeAudioEncode();
 ### Audio
 
 另外可以使用内置的`Audio`来进行播放
+
+> 属性和方法
+
+| Method Property | Description |
+| ---- | ---- |
+| play | 播放音频 |
+| pause | 暂停播放 |
+| close     | 关闭播放器 |
+| addEventListener | 添加事件 |
+| removeEventListener | 移除事件 |
+| currentTime | 获取或者设置当前播放器播放进度 |
+| duration | 播放时长 |
+
+> 事件
+
+| Name | Description |
+| ---- | ---- |
+| play | 当播放音频时触发 |
+| pause| 当暂停时触发 |
+| progress | 播放进度事件 |
+| ended | 播放结束事件 |
+| closed | 播放器关闭时触发 |
+| error | 播放异常时触发 |
+| loadedmetadata | 当元数据加载完成时触发，此时可以获取到正确的`duration` |
+| create-context | 自定义创建`AudioContext` |
+| node | 当解码数据后切要播放该数据时会创建`AudioBufferSourceNode`节点时触发 |
 
 ```js
 import FFmpegJs from 'ffmpeg-js';

@@ -49,7 +49,7 @@ function decodeAudio() {
   ffmpegPlayer = new FFmpegJs.Audio(url,{ debug:true });
   ffmpegPlayer.addEventListener('play', () => console.log('play audio'));
   ffmpegPlayer.addEventListener('pause', () => console.log('pause audio'));
-  ffmpegPlayer.addEventListener('playing', (ctx) => console.log('playing:' + ctx.currentTime));
+  ffmpegPlayer.addEventListener('progress', (ctx) => console.log('playing:' + ctx.currentTime));
   ffmpegPlayer.addEventListener('ended', () => console.log('play audio ended'));
   ffmpegPlayer.addEventListener('close', () => console.log('audio closed'));
   ffmpegPlayer.play();

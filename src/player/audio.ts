@@ -3,7 +3,7 @@ import AVCodecWebAssembly from '../index';
 import AVEvents from './events';
 import loadAvcodecInput from '../protocol';
 
-declare type AudioContextEvent = 'ended' | 'playing' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata' | 'create-context' | 'node';
+declare type AudioContextEvent = 'ended' | 'progress' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata' | 'create-context' | 'node';
 declare type CancelEvent = () => void
 
 const globalAudioContext = {
@@ -275,7 +275,7 @@ export default class FFMpegAudioContext {
    */
   private async processAudioTask() {
     if (this.state == 'running') {
-      this.events.dispatchEvent('playing', this);
+      this.events.dispatchEvent('progress', this);
     }
     if (!this.runKeepping) {
       return;
@@ -439,7 +439,7 @@ export default class FFMpegAudioContext {
         this.avcodeTaskCount = Math.max(0, this.avcodeTaskCount - 1);
         if (queue.done) {
           this.runKeepping = false;
-          this.events.dispatchEvent('playing', this);
+          this.events.dispatchEvent('progress', this);
           this.audioContext.suspend();
           this.events.dispatchEvent('ended', this);
         }
