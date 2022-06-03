@@ -1,12 +1,12 @@
 {
-  "name": "ffmpeg-js",
+  "name": "ffmpegs",
   "version": "1.2.0",
   "description": "A lightweight ffmpeg webassembly",
   "types": "src/index.ts",
   "main": "dist/index.js",
   "keywords": [
     "ffmpeg",
-    "ffmpeg-js",
+    "ffmpegs",
     "webassembly",
     "wasm"
   ],

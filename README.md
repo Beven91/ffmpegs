@@ -1,9 +1,11 @@
-<h1 align="center">FFmpegJs</h1>
+<h1 align="center">FFmpegs</h1>
 
 <div align="center">
 一个基于<a href="https://github.com/FFmpeg/FFmpeg">ffmpeg</a>构建在webassembly平台上的轻量级音视频编码与解码工具。
+<div>
+  <img src="https://img.shields.io/npm/v/ffmpegs.svg">
 </div>
-[![NPM version][npm-image]][npm-url]
+</div>
 
 ## 特性
 
@@ -37,18 +39,18 @@
 ## 安装
 
 ```sh
-npm install ffmpeg-js
+npm install ffmpegs
 ```
 
 ```sh
-yarn add ffmpeg-js
+yarn add ffmpegs
 ```
 
 ## 使用
 
-### FFmpegJs
+### FFmpegs
 
-> FFmpegJs 实例
+> FFmpegs 实例
 
 | Method | Description |
 | ---- | ---- |
@@ -64,24 +66,24 @@ yarn add ffmpeg-js
 > 初始化
 
 ```js
-import FFmpegJs from 'ffmpeg-js';
-import opusUrl from 'ffmpeg-js/assembly/opus.wasm';
+import FFmpegs from 'ffmpegs';
+import opusUrl from 'ffmpegs/assembly/opus.wasm';
 
 // initialize....
-FFmpegJs.AvariableWebAssembies = {
+FFmpegs.AvariableWebAssembies = {
   'opus':opusUrl,
 }
 
 // create typed instance
-const ffmpegjs = new FFmpegJs('opus');
+const ffmpegjs = new FFmpegs('opus');
 ```
 
 > decodeAudioFile
 
 ```js
-import FFmpegJs from 'ffmpeg-js';
+import FFmpegs from 'ffmpegs';
 
-const ffmpegjs = new FFmpegJs('opus');
+const ffmpegjs = new FFmpegs('opus');
 
 const file = files[0];
 
@@ -106,9 +108,9 @@ ffmpegjs.decodeAudioFile(file).then((response)=>{
 > encodeAudioFile
 
 ```js
-import FFmpegJs from 'ffmpeg-js';
+import FFmpegs from 'ffmpegs';
 
-const ffmpegjs = new FFmpegJs('opus');
+const ffmpegjs = new FFmpegs('opus');
 
 const pcmfile = files[0];
 
@@ -127,9 +129,9 @@ ffmpegjs.encodeAudioFile(pcmfile).then((response)=>{
 > 持续解码
 
 ```js
-import FFmpegJs from 'ffmpeg-js';
+import FFmpegs from 'ffmpegs';
 
-const ffmpegjs = new FFmpegJs('opus');
+const ffmpegjs = new FFmpegs('opus');
 
 async function fetchAudio(){
   const response = await fetch('./demo.opus');
@@ -156,9 +158,9 @@ async function fetchAudio(){
 > 持续编码
 
 ```js
-import FFmpegJs from 'ffmpeg-js';
+import FFmpegs from 'ffmpegs';
 
-const ffmpegjs = new FFmpegJs('opus');
+const ffmpegjs = new FFmpegs('opus');
 
 const data = {
   input: {
@@ -190,13 +192,13 @@ await ffmpegjs.closeAudioEncode();
 
 
 ```js
-import FFmpegJs from 'ffmpeg-js';
+import FFmpegs from 'ffmpegs';
 
 // 播放url
-const audio = new FFmpegJs.Audio('http://xxx.com/demo.opus');
+const audio = new FFmpegs.Audio('http://xxx.com/demo.opus');
 
 // 播放File对象
-const audio2 = new FFmpegJs.Audio(file);
+const audio2 = new FFmpegs.Audio(file);
 
 document.querySelector('#play').addEventListener('click',()=>{
   // 播放
@@ -230,7 +232,3 @@ document.querySelector('#play').addEventListener('click',()=>{
 | loadedmetadata | 当元数据加载完成时触发，此时可以获取到正确的`duration` |
 | create-context | 自定义创建`AudioContext` |
 | node | 当解码数据后切要播放该数据时会创建`AudioBufferSourceNode`节点时触发 |
-
-
-[npm-url]: https://www.npmjs.com/package/ffmpeg-js
-[npm-image]: https://img.shields.io/npm/v/ffmpeg-js.svg

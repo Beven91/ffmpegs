@@ -3,7 +3,7 @@ import createAssemlby from './asmlib.template';
 export function log(debug: boolean, name: string, ...params: any[]) {
   if (debug == true) {
     const isWork = 'WorkerLocation' in self;
-    const type = isWork ? '[ffmpeg-js-worker]' : '[ffmpeg-js]';
+    const type = isWork ? '[ffmpegs-worker]' : '[ffmpegs]';
     if (isWork) {
       self.postMessage({ type: 'log', name, params: params });
     } else {

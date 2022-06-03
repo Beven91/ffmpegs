@@ -113,7 +113,7 @@ assemblyWorker.addEventListener('message', (response: MessageEvent<WorkerRespons
   switch (type) {
     case 'log':
       const meta = (response.data as any) as { name: string, params: any[] };
-      console.debug(`[ffmpeg-js-worker] ${meta.name}`, ...(meta.params || []));
+      console.debug(`[ffmpegs-worker] ${meta.name}`, ...(meta.params || []));
       break;
     case 'error':
       console.error(response.data?.data);
