@@ -195,7 +195,16 @@ await ffmpegjs.closeAudioEncode();
 import FFmpegs from 'ffmpegs';
 
 // 播放url
-const audio = new FFmpegs.Audio('http://xxx.com/demo.opus');
+const audio = new FFmpegs.Audio('http://xxx.com/demo.opus',{
+  // 是否输出调试日志
+  debug: false,
+  /**
+   * 播放模式
+   * audio ： 音频模式，可以设置currentTime回放
+   * infinite: 无限播放模式，不可以设置currentTime，且不会缓存播放过的数据
+   */
+  mode:'audio'
+});
 
 // 播放File对象
 const audio2 = new FFmpegs.Audio(file);
