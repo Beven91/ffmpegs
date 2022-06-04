@@ -216,6 +216,13 @@ document.querySelector('#play').addEventListener('click',()=>{
 
 ```
 
+> 播放模式
+
+| Name | Description |
+| ---- | ---- |
+| audio| 普通音频播放模式，可以设置currentTime,且会缓存播放过的数据为blob|
+| infinite| 无限播放哦是，不会缓存播放过的数据，另外无法设置currentTime|
+
 > 属性和方法
 
 | Method Property | Description |
