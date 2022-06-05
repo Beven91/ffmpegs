@@ -1,5 +1,5 @@
 
-export default class AVEvents<T extends string> {
+export default class FFEvents<T extends string> {
 
   private readonly containers: Record<any, Function[]>;
 

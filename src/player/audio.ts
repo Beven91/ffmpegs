@@ -1,6 +1,7 @@
 import FFMpegProtocol from '../protocol/base';
 import AVCodecWebAssembly from '../index';
-import AVEvents from './events';
+import FFEvents from '../polyfill/events';
+import polyfill from '../polyfill/api';
 import loadAvcodecInput from '../protocol';
 
 declare type AudioContextEvent = 'ended' | 'progress' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata' | 'create-context' | 'node';
@@ -110,7 +111,7 @@ export default class FFMpegAudioContext {
   /**
    * 事件容器
    */
-  private events: AVEvents<AudioContextEvent>
+  private events: FFEvents<AudioContextEvent>
 
   /**
    * 数据源节点列表
@@ -236,7 +237,7 @@ export default class FFMpegAudioContext {
     this.avcodec = new AVCodecWebAssembly(this.options.type, this.options);
     this.audioBufferQueues.length = 0;
     this.promiseAvcodecTasks = Promise.resolve({});
-    this.events = new AVEvents<AudioContextEvent>();
+    this.events = new FFEvents<AudioContextEvent>();
     if (this.options.preload) {
       this.fetchAudio(true);
     }
@@ -458,11 +459,10 @@ export default class FFMpegAudioContext {
   /**
    * 创建AudioContext
    */
-  private createAudioContext() {
+  private tryCreateAudioContext() {
     if (this.audioContext == null) {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       const results = this.events.dispatchEvent<AudioContext>('create-context', this);
-      this.audioContext = results[0] || new AudioContext();
+      this.audioContext = results[0] || polyfill.createAudioContext();
     }
     return this.audioContext;
   }
@@ -474,7 +474,7 @@ export default class FFMpegAudioContext {
     if (this.currentTime < this.duration && this.runKeepping == false) {
       globalAudioContext.current?.pause();
       this.runKeepping = true;
-      this.createAudioContext();
+      this.tryCreateAudioContext();
       this.fetchAudio();
       this.audioContext.resume();
       if (this.cachedAudioBuffers.length > 0) {

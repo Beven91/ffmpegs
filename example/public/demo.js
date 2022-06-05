@@ -1,6 +1,6 @@
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
-var type = 'daudio';
+var type = 'opus';
 // var type = 'audio-pure';
 var runtimeAudio = {};
 var audioContext = new AudioContext();
@@ -134,4 +134,43 @@ function handleEncoder2(files) {
     });
 
   });
+}
+
+let myStream = null;
+  const chunks = [];
+  
+function startRecord(){
+  
+  navigator.mediaDevices.getUserMedia({ audio:true }).then((stream)=>{
+
+    myStream = stream;
+    const context = new AudioContext({ sampleRate:48000 });
+    stream.getAudioTracks()[0].applyConstraints({
+      sampleRate:48000,
+    }).then(()=>{
+      const m = context.createMediaStreamSource(stream);
+      const jsNode = context.createScriptProcessor();
+      m.connect(jsNode);
+      jsNode.connect(context.destination);
+      jsNode.addEventListener('audioprocess',(d)=>{
+        const a = d.inputBuffer.getChannelData(0);
+        const b = d.inputBuffer.getChannelData(1);
+        chunks.push(a);
+        chunks.push(b);
+
+      })
+    })
+  })
+
+}
+
+function stopRecord(){
+  myStream.getAudioTracks()[0].stop();
+  var blob = new Blob(chunks, { type: 'application/octet-stream' });
+  var url = window.URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'aaa.webm';
+  a.click();
+
 }
