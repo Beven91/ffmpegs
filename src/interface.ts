@@ -1,7 +1,9 @@
-import type GetFFMpegAssemblyAdapter from './ffmpeg';
+import type FFMpegAssemblyCodeProvider from './webassembly/WebFFMpegCodeProvider';
 import type { log } from './asmlib';
 
-declare type AssemblyExportKeys = 'decode' | 'open_audio_decode' | 'audio_decode' | 'close_audio_decode' | 'encode' | 'open_audio_encode' | 'audio_encode' | 'close_audio_encode'
+declare type AudioAssemblyExportKeys = 'decode' | 'open_audio_decode' | 'audio_decode' | 'close_audio_decode' | 'encode' | 'open_audio_encode' | 'audio_encode' | 'close_audio_encode'
+declare type VideoAssemblyExportKeys = 'decode' | 'open_video_decode' | 'video_decode' | 'close_video_decode' | 'encode' | 'open_video_encode' | 'video_encode' | 'close_video_encode'
+
 
 export interface AssemblyResponse {
   ret: number
@@ -129,11 +131,13 @@ export interface AVEncoderResponse extends AssemblyResponse {
   data: Uint8Array
 }
 
+export type AssemblyNativeMethods = 'init' | AudioAssemblyExportKeys | VideoAssemblyExportKeys
+
 export interface WorkderRequest<T = any> {
   id?: string
   idKey?: number
   name?: string
-  action: 'init' | AssemblyExportKeys
+  action: AssemblyNativeMethods
   debug?: boolean
   data?: T
 }
@@ -145,7 +149,7 @@ export interface WorkerResponse<T = AssemblyResponse> {
 }
 
 export interface FFmpegAssemblyWrapInstance {
-  cwrap?: (name: AssemblyExportKeys, returnType: string, argsType: string[]) => (...params: any[]) => any
+  cwrap?: (name: AudioAssemblyExportKeys, returnType: string, argsType: string[]) => (...params: any[]) => any
   [propName: string]: any
 }
 
@@ -162,7 +166,7 @@ export interface AssemblyFS {
 
 export interface AssemblyWorkerSelf extends Window {
   FS?: AssemblyFS
-  FFMpegAssemblyAdapter?: ReturnType<typeof GetFFMpegAssemblyAdapter>,
+  FFMpegAssemblyAdapter?: ReturnType<typeof FFMpegAssemblyCodeProvider>,
   log?: typeof log
   locationOrigin?: string
 }

@@ -54,8 +54,8 @@ yarn add ffmpegs
 
 | Method | Description |
 | ---- | ---- |
-| decodeAudioFile | 解码音频文件 |
-| encodeAudioFile | 编码音频文件 |
+| decode | 解码音频文件 |
+| encode | 编码音频文件 |
 | openAudioDecode | 打开音频解码器 |
 | decodeAudio     | `openAudioDecode`后用于解码音频数据 |
 | closeAudioDecode| `openAudioDecode`后用于关闭音频解码器 |
@@ -66,28 +66,23 @@ yarn add ffmpegs
 > 初始化
 
 ```js
-import FFmpegs from 'ffmpegs';
+import { AudioAssembly } from 'ffmpegs';
 import opusUrl from 'ffmpegs/assembly/opus.wasm';
 
-// initialize....
-FFmpegs.AvariableWebAssembies = {
-  'opus':opusUrl,
-}
-
-// create typed instance
-const ffmpegjs = new FFmpegs('opus');
+// create instance
+const audioAssemlby = new AudioAssembly(opusUrl);
 ```
 
-> decodeAudioFile
+> decode
 
 ```js
-import FFmpegs from 'ffmpegs';
+import { AudioAssembly } from 'ffmpegs';
 
-const ffmpegjs = new FFmpegs('opus');
+const audioAssemlby = new AudioAssembly('https://xx.com/opus.wasm');
 
 const file = files[0];
 
-ffmpegjs.decodeAudioFile(file).then((response)=>{
+audioAssemlby.decode(file).then((response)=>{
   // 当前音频编码器名称
   console.log(response.codecName);
   console.log(response.codecLongName);
@@ -105,16 +100,16 @@ ffmpegjs.decodeAudioFile(file).then((response)=>{
 
 ```
 
-> encodeAudioFile
+> encode
 
 ```js
-import FFmpegs from 'ffmpegs';
+import { AudioAssembly } from 'ffmpegs';
 
-const ffmpegjs = new FFmpegs('opus');
+const audioAssemlby = new AudioAssembly('https://xx.com/opus.wasm');
 
 const pcmfile = files[0];
 
-ffmpegjs.encodeAudioFile(pcmfile).then((response)=>{
+audioAssemlby.encode(pcmfile).then((response)=>{
   // 编码后的数据Uint8Array
   const data = response.data;
   const blob = new Blob([data], { type: 'application/octet-stream' });
@@ -129,9 +124,9 @@ ffmpegjs.encodeAudioFile(pcmfile).then((response)=>{
 > 持续解码
 
 ```js
-import FFmpegs from 'ffmpegs';
+import { AudioAssembly } from 'ffmpegs';
 
-const ffmpegjs = new FFmpegs('opus');
+const audioAssemlby = new AudioAssembly('https://xx.com/opus.wasm');
 
 async function fetchAudio(){
   const response = await fetch('./demo.opus');
@@ -139,7 +134,7 @@ async function fetchAudio(){
 
   let partial = await reader.read();
   // 打开解码器
-  await ffmpegjs.openAudioDecode({ buffer:partial.value });
+  await audioAssemlby.openAudioDecode({ buffer:partial.value });
 
   while(!partial.done) {
     partial = await reader.read();
@@ -151,16 +146,16 @@ async function fetchAudio(){
   }
 
   // 关闭解码器
-  await ffmpegjs.closeAudioDecode();
+  await audioAssemlby.closeAudioDecode();
 }
 ```
 
 > 持续编码
 
 ```js
-import FFmpegs from 'ffmpegs';
+import { AudioAssembly } from 'ffmpegs';
 
-const ffmpegjs = new FFmpegs('opus');
+const audioAssemlby = new AudioAssembly('https://xx.com/opus.wasm');
 
 const data = {
   input: {
@@ -175,27 +170,28 @@ const data = {
 }
 
 // 打开编码器
-await ffmpegjs.openAudioEncode(data);
+await audioAssemlby.openAudioEncode(data);
 
 // 编码音频数据
 const buffer:Uint8Array;
-await ffmpegjs.encodeAudio(buffer);
+await audioAssemlby.encodeAudio(buffer);
 
 // 关闭编码
-await ffmpegjs.closeAudioEncode();
+await audioAssemlby.closeAudioEncode();
 
 ```
 
 ### Audio
 
-另外可以使用内置的`Audio`来进行播放
+另外可以使用内置的`AudioPlayer`来进行播放
 
 
 ```js
-import FFmpegs from 'ffmpegs';
+import { AudioAssembly } from 'ffmpegs';
 
+const audioAssemlby = new AudioAssembly('https://xx.com/opus.wasm');
 // 播放url
-const audio = new FFmpegs.Audio('http://xxx.com/demo.opus',{
+const player = audioAssemlby.createAudioPlayer('http://xxx.com/demo.opus',{
   // 是否输出调试日志
   debug: false,
   /**
@@ -207,11 +203,11 @@ const audio = new FFmpegs.Audio('http://xxx.com/demo.opus',{
 });
 
 // 播放File对象
-const audio2 = new FFmpegs.Audio(file);
+const player2 = audioAssemlby.createAudioPlayer(file)
 
 document.querySelector('#play').addEventListener('click',()=>{
   // 播放
-  audio.play();
+  player2.play();
 });
 
 ```

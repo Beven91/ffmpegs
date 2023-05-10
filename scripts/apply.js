@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 const file = './dist/src/asmlib.template.js';
-const id = require.resolve('./dist/audio.js');
+const id = require.resolve('../dist/audio.js');
 const assemblyAsmlib = require(id);
 
 const code = assemblyAsmlib.toString().split(/\r\n|\n/).join(' ').replace(/\\/g,'\\\\').replace(/'/g,"\\'");

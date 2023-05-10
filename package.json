@@ -13,7 +13,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "start": "cd example && ts-node ./www",
-    "build": "npm run asmlib && node apply.js && npm run umd && npm run uglify",
+    "build": "npm run asmlib && node scripts/apply.js && npm run umd && npm run uglify",
     "asmlib":"tsc && tsc --allowJs assembly/audio.js --out dist/audio.js --noEmitOnError && npm run uglify-audio",
     "umd":"browserify --entry dist/src/index.js --noparse=$PWD/dist/assembly/audio.js  --no-bundle-external --ignore-missing  --outfile dist/umd/ffmpegjs.js",
     "uglify":"uglifyjs dist/umd/ffmpegjs.js --output dist/umd/ffmpegjs.min.js",

@@ -1,6 +1,6 @@
-import type { AssemblyResponse, AssemblyWorkerSelf, FFmpegAssemblyWrapInstance, WorkderRequest, WorkerResponse } from "./interface";
-import { polyfill, createFFmepgAssembly, log } from './asmlib';
-import FFMpegAssemblyAdapter from './ffmpeg';
+import type { AssemblyNativeMethods, AssemblyResponse, AssemblyWorkerSelf, FFmpegAssemblyWrapInstance, WorkderRequest, WorkerResponse } from "../interface";
+import { polyfill, createFFmepgAssembly, log } from '../asmlib';
+import FFMpegAssemblyCodeProvider from './WebFFMpegCodeProvider';
 
 const generate = {
   id: 0
@@ -56,7 +56,18 @@ function WebAssemblyWorkerJs() {
       const url = /^(http|https)/.test(uri as string) ? uri as string : origin + uri;
       const options = { credentials: "same-origin" } as RequestInit;
       const io = assemblyRuntime.importObject;
-      fetchedWebAssemblies[id] = WebAssembly.instantiateStreaming(fetch(url, options), io);
+      const onError = () => {
+        console.error('asdfasdfsdfsdfsdfdsffsdfsdfdsf')
+        return Promise.reject(new Error(`Failed to load assembly: ${url}`));
+      }
+      const response = fetch(url, options).then((r) => {
+        const success = r.status == 200 || r.status == 304;
+        return success ? r : onError();
+      })
+      response.catch(() => {
+        onError();
+      })
+      fetchedWebAssemblies[id] = WebAssembly.instantiateStreaming(response, io);
     }
     return fetchedWebAssemblies[id];
   }
@@ -103,7 +114,7 @@ function WebAssemblyWorkerJs() {
 /**
  * 根据WebAssemblyWorkerJs代码创建一个web worker来加载webassembly
  */
-const blob = new Blob([polyfill, createFFmepgAssembly, `(${FFMpegAssemblyAdapter.toString()}());`, WebAssemblyWorkerJs.toString(), ';WebAssemblyWorkerJs();']);
+const blob = new Blob([polyfill, createFFmepgAssembly, `(${FFMpegAssemblyCodeProvider.toString()}());`, WebAssemblyWorkerJs.toString(), ';WebAssemblyWorkerJs();']);
 const assemblyWorker = new Worker(window.URL.createObjectURL(blob));
 assemblyWorker.addEventListener('messageerror', (e) => {
   console.error(e);
@@ -122,6 +133,11 @@ assemblyWorker.addEventListener('message', (response: MessageEvent<WorkerRespons
 })
 assemblyWorker.onerror = function (e) {
   console.error(e);
+}
+
+export interface WebAssemblyWorkerOptions {
+  uri: string
+  debug?: boolean
 }
 
 export default class WebAssemblyWorker {
@@ -149,10 +165,11 @@ export default class WebAssemblyWorker {
    * 构造一个WebAssemlby执行器
    * @param name assembly名称
    */
-  constructor(name: string, uri: string, debug: boolean) {
-    this.name = name;
+  constructor(options: WebAssemblyWorkerOptions) {
+    const uri = options.uri || '';
+    this.name = uri.split('/').pop();
     this.responseCallbacks = {};
-    this.debug = debug;
+    this.debug = options.debug;
     this.idKey = generate.id++;
     assemblyWorker.addEventListener('message', (response: MessageEvent<WorkerResponse>) => {
       const id = response.data?.id;
@@ -160,8 +177,8 @@ export default class WebAssemblyWorker {
       delete this.responseCallbacks[id];
       callback && callback(response.data.data);
     });
-    log(debug, `initialize assembly: ${name} > ${uri}`)
-    this.assemblyPromise = this.invoke({ action: 'init', data: uri });
+    log(this.debug, `Initialize assembly: ${uri}`)
+    this.assemblyPromise = this.invoke('init', uri);
   }
 
   /**
@@ -169,7 +186,7 @@ export default class WebAssemblyWorker {
    * @param data 执行参数
    * @returns Promise
    */
-  async invoke(data: WorkderRequest): Promise<AssemblyResponse> {
+  async invoke(name: AssemblyNativeMethods, data?: any): Promise<AssemblyResponse> {
     // 等待初始化结束
     await Promise.resolve(this.assemblyPromise);
     return new Promise((resolve, reject) => {
@@ -177,7 +194,7 @@ export default class WebAssemblyWorker {
       this.responseCallbacks[id] = (data) => {
         data?.ret != 0 ? reject(data) : resolve(data);
       };
-      assemblyWorker.postMessage({ ...data, idKey: this.idKey, id, name: this.name, debug: this.debug });
+      assemblyWorker.postMessage({ data, action: name, idKey: this.idKey, id, name: this.name, debug: this.debug });
     });
   }
 }

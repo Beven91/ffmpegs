@@ -1,14 +1,12 @@
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
-var type = 'opus';
-// var type = 'audio-pure';
 var runtimeAudio = {};
 var audioContext = new AudioContext();
 var ffmpegPlayer = null;
 var ffmpegPlayer2 = null;
-var ffmpeg = new FFmpegJs(type, { debug: true });
+var assemblyUrl = 'opus-pure.wasm';
+var audioAssembly = new FFmpegJs.AudioAssembly('/' + assemblyUrl, { debug: true });
 // 设置默认assembly
-FFmpegJs.defaultAssembly = type;
 
 function playAudioBuffer(meta) {
   var channelsBuffer = meta.channelsBuffer;
@@ -31,11 +29,11 @@ function playAudioBuffer(meta) {
 }
 
 function decodeAudioFile(files) {
-  ffmpeg.decodeAudioFile(files[0]).then(playAudioBuffer);
+  audioAssembly.decode(files[0]).then(playAudioBuffer);
 }
 
 function decodeAudioFilePlay(files) {
-  const player = new FFmpegJs.Audio(files[0], { debug: true,minRead:12 * 1024 });
+  const player = audioAssembly.createAudioPlayer(files[0], { minRead: 12 * 1024 });
   player.play();
 }
 
@@ -44,8 +42,8 @@ function decodeAudio2() {
 }
 
 function decodeAudio() {
-  var url = type == 'opus-pure' ? '/pure.opus' : 'normal.opus';
-  ffmpegPlayer = new FFmpegJs.Audio(url,{ debug:true });
+  var url = assemblyUrl == 'opus-pure.wasm' ? '/pure.opus' : '/normal.opus';
+  ffmpegPlayer = audioAssembly.createAudioPlayer(url);
   ffmpegPlayer.addEventListener('play', () => console.log('play audio'));
   ffmpegPlayer.addEventListener('pause', () => console.log('pause audio'));
   ffmpegPlayer.addEventListener('progress', (ctx) => console.log('playing:' + ctx.currentTime));
@@ -97,7 +95,7 @@ function handleEncoder(files) {
       bitRate: 96000
     }
   }
-  ffmpeg.encodeAudioFile(options).then(onEncodeCompleted);
+  audioAssembly.encodeAudioFile(options).then(onEncodeCompleted);
 }
 
 function onEncodeCompleted(response) {
@@ -126,10 +124,10 @@ function handleEncoder2(files) {
     }
   }
   readFile(file).then(function (buffer) {
-    ffmpeg.openAudioEncode(options).then(function (ret) {
+    audioAssembly.openAudioEncode(options).then(function (ret) {
       var ch = buffer.slice(0, 4000000);
-      ffmpeg.encodeAudio(new Uint8Array(ch)).then(function () {
-        ffmpeg.closeAudioEncode().then(onEncodeCompleted);
+      audioAssembly.encodeAudio(new Uint8Array(ch)).then(function () {
+        audioAssembly.closeAudioEncode().then(onEncodeCompleted);
       })
     });
 
@@ -137,22 +135,22 @@ function handleEncoder2(files) {
 }
 
 let myStream = null;
-  const chunks = [];
-  
-function startRecord(){
-  
-  navigator.mediaDevices.getUserMedia({ audio:true }).then((stream)=>{
+const chunks = [];
+
+function startRecord() {
+
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
 
     myStream = stream;
-    const context = new AudioContext({ sampleRate:48000 });
+    const context = new AudioContext({ sampleRate: 48000 });
     stream.getAudioTracks()[0].applyConstraints({
-      sampleRate:48000,
-    }).then(()=>{
+      sampleRate: 48000,
+    }).then(() => {
       const m = context.createMediaStreamSource(stream);
       const jsNode = context.createScriptProcessor();
       m.connect(jsNode);
       jsNode.connect(context.destination);
-      jsNode.addEventListener('audioprocess',(d)=>{
+      jsNode.addEventListener('audioprocess', (d) => {
         const a = d.inputBuffer.getChannelData(0);
         const b = d.inputBuffer.getChannelData(1);
         chunks.push(a);
@@ -164,7 +162,7 @@ function startRecord(){
 
 }
 
-function stopRecord(){
+function stopRecord() {
   myStream.getAudioTracks()[0].stop();
   var blob = new Blob(chunks, { type: 'application/octet-stream' });
   var url = window.URL.createObjectURL(blob);

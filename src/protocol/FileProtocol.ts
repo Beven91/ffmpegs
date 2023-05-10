@@ -1,4 +1,4 @@
-import FFMpegProtocol from './base';
+import FFMpegProtocol from './BaseProtocol';
 
 export default class FileProtocol extends FFMpegProtocol<File> {
 

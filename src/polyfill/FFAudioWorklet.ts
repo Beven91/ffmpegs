@@ -1,5 +1,5 @@
 
-import FFEvents from "./events";
+import FFEvents from "./FFEvents";
 
 type FFAudioWorkletEvents = 'receive'
 

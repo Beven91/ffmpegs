@@ -2,9 +2,9 @@ import type {
   AssemblyWorkerSelf, OpenAudioDecodeResponse, FFmepgAssemblyInstance,
   FFmpegAssemblyWrapInstance, AVDecoderRequest, WorkderRequest, AVEncoderRequest,
   AssemblyResponse, AVDecoderResponse, AVEncoderResponse
-} from "./interface";
+} from "../interface";
 
-export default function GetFFMpegAssemblyAdapter() {
+export default function WebFFMpegAssemblyCodeProvider() {
   const log = (self as AssemblyWorkerSelf).log;
 
   class FFMpegAssemblyAdapter {

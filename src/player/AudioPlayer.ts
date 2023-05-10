@@ -1,11 +1,11 @@
-import FFMpegProtocol from '../protocol/base';
-import AVCodecWebAssembly from '../index';
-import FFEvents from '../polyfill/events';
+import FFMpegProtocol from '../protocol/BaseProtocol';
+import FFEvents from '../polyfill/FFEvents';
 import polyfill from '../polyfill/api';
 import loadAvcodecInput from '../protocol';
+import AudioAssembly from '../webassembly/AudioAssembly';
 
 declare type AudioContextEvent = 'ended' | 'progress' | 'play' | 'pause' | 'closed' | 'error' | 'loadedmetadata' | 'create-context' | 'node';
-declare type CancelEvent = () => void
+declare type CancelHandler = () => void
 
 const globalAudioContext = {
   // 当前正在播放的音频实例
@@ -13,13 +13,6 @@ const globalAudioContext = {
 }
 
 export interface FFMpegAudioContextOptions {
-  /**
-   * 当前wasm场景类型
-   */
-  type?: keyof typeof AVCodecWebAssembly.AvariableWebAssembies
-
-  debug?: boolean
-
   /**
    * 在读取音频url返回数据时，最小数据块大小
    */
@@ -61,12 +54,14 @@ export interface FFMpegAudioBufferSourceNode {
   endTime: number
 }
 
+export type AudioSource = string | File
+
 export default class FFMpegAudioContext {
 
   /**
    * 当前要播放的音频url
    */
-  private readonly url: string
+  private url: AudioSource
 
   /**
    * 配置选项
@@ -76,7 +71,7 @@ export default class FFMpegAudioContext {
   /**
    * 音频解码器
    */
-  private readonly avcodec: AVCodecWebAssembly
+  private readonly avcodec: AudioAssembly
 
   /**
    * 音频播放器
@@ -181,6 +176,24 @@ export default class FFMpegAudioContext {
   }
 
   /**
+   * 设置当前播放器播放资源地址
+   */
+  public set src(value: AudioSource) {
+    if (this.url == value) return;
+    this.url = value;
+    if (this.options.preload) {
+      this.fetchAudio(true);
+    }
+  }
+
+  /**
+   * 获取当前播放器播放资源地址
+   */
+  public get src() {
+    return this.url;
+  }
+
+  /**
    * 当前播放时间进度
    * @param url 
    * @param options 
@@ -219,8 +232,7 @@ export default class FFMpegAudioContext {
     }
   }
 
-  constructor(url: string, options?: FFMpegAudioContextOptions) {
-    this.url = url;
+  constructor(avcodec: AudioAssembly, options?: FFMpegAudioContextOptions) {
     this.bufferDuration = 0;
     this.seekOffset = 0;
     this.unsedDuration = 0;
@@ -234,13 +246,10 @@ export default class FFMpegAudioContext {
     this.cachedAudioBuffers = [];
     this.options = { mode: 'audio', ...(options || {}) } as FFMpegAudioContextOptions;
     this.options.minRead = Math.max(this.options.minRead || 0, 12 * 1024);
-    this.avcodec = new AVCodecWebAssembly(this.options.type, this.options);
+    this.avcodec = avcodec;
     this.audioBufferQueues.length = 0;
     this.promiseAvcodecTasks = Promise.resolve({});
     this.events = new FFEvents<AudioContextEvent>();
-    if (this.options.preload) {
-      this.fetchAudio(true);
-    }
   }
 
   /**
@@ -509,7 +518,7 @@ export default class FFMpegAudioContext {
    * 通过自定义方式创建播放`AudioContext`
    * 可以用来实现一些播放增强设置
    */
-  addEventListener(name: 'create-context', handler: (audio: FFMpegAudioContext) => AudioContext): CancelEvent
+  addEventListener(name: 'create-context', handler: (audio: FFMpegAudioContext) => AudioContext): CancelHandler
 
   /**
    * 当前播放器在播放解码数据前触发当前事件，
@@ -517,14 +526,14 @@ export default class FFMpegAudioContext {
    * @param name 
    * @param handler 
    */
-  addEventListener(name: 'node', handler: (source: AudioBufferSourceNode, audioContext: AudioContext) => void): CancelEvent
+  addEventListener(name: 'node', handler: (source: AudioBufferSourceNode, audioContext: AudioContext) => void): CancelHandler
 
-  addEventListener(name: AudioContextEvent, handler: (audio: FFMpegAudioContext) => void): CancelEvent
+  addEventListener(name: AudioContextEvent, handler: (audio: FFMpegAudioContext) => void): CancelHandler
 
   /**
    * 添加事件监听
    */
-  addEventListener(name: AudioContextEvent, handler: (...params: any[]) => void): CancelEvent {
+  addEventListener(name: AudioContextEvent, handler: (...params: any[]) => void): CancelHandler {
     this.events.addEventListener(name, handler);
     return () => {
       this.events.removeEventListener(name, handler);

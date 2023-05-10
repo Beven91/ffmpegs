@@ -5,7 +5,7 @@
 import { Registry } from 'node-web-mvc';
 import path from 'path'
 
-const port = 8080;
+const port = 8899;
 
 Registry.launch({
   port: port,

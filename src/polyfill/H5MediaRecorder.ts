@@ -3,7 +3,7 @@
  * @description 媒体录制器，目前主要用来进行音频录制
  */
 import polyfill from './api'
-import FFAudioWorklet from './audio-worklet'
+import FFAudioWorklet from './FFAudioWorklet'
 
 class H5MediaRecorder implements MediaRecorder {
   private options: MediaRecorderOptions
